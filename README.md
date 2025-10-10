@@ -5,7 +5,13 @@
 
   ## Running the code
 
-  Run `npm i` to install the dependencies.
+  Install Node.js
+
+  Run `npm install --global yarn` to install yarn.
+
+  Open project folder then open cmd on that folder.
+
+  Run `npm install` to install the dependencies.
 
   Run `npm run dev` to start the development server.
   
