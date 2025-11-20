@@ -1,0 +1,15 @@
+D:\POA-App\POA-Backend\POA.Application\obj\Debug\net8.0\POA.Application.csproj.AssemblyReference.cache
+D:\POA-App\POA-Backend\POA.Application\obj\Debug\net8.0\POA.Application.GeneratedMSBuildEditorConfig.editorconfig
+D:\POA-App\POA-Backend\POA.Application\obj\Debug\net8.0\POA.Application.AssemblyInfoInputs.cache
+D:\POA-App\POA-Backend\POA.Application\obj\Debug\net8.0\POA.Application.AssemblyInfo.cs
+D:\POA-App\POA-Backend\POA.Application\obj\Debug\net8.0\POA.Application.csproj.CoreCompileInputs.cache
+D:\POA-App\POA-Backend\POA.Application\bin\Debug\net8.0\POA.Application.deps.json
+D:\POA-App\POA-Backend\POA.Application\bin\Debug\net8.0\POA.Application.dll
+D:\POA-App\POA-Backend\POA.Application\bin\Debug\net8.0\POA.Application.pdb
+D:\POA-App\POA-Backend\POA.Application\bin\Debug\net8.0\POA.Domain.dll
+D:\POA-App\POA-Backend\POA.Application\bin\Debug\net8.0\POA.Domain.pdb
+D:\POA-App\POA-Backend\POA.Application\obj\Debug\net8.0\POA.Appl.87A03F0C.Up2Date
+D:\POA-App\POA-Backend\POA.Application\obj\Debug\net8.0\POA.Application.dll
+D:\POA-App\POA-Backend\POA.Application\obj\Debug\net8.0\refint\POA.Application.dll
+D:\POA-App\POA-Backend\POA.Application\obj\Debug\net8.0\POA.Application.pdb
+D:\POA-App\POA-Backend\POA.Application\obj\Debug\net8.0\ref\POA.Application.dll
