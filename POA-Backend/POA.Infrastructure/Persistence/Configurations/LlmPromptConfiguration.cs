@@ -46,13 +46,17 @@ public sealed class LlmPromptConfiguration : IEntityTypeConfiguration<LlmPrompt>
             .HasColumnName("created_at")
             .HasColumnType("timestamptz");
 
+        // LlmPrompts table doesn't have updated_at column, so ignore it
+        builder.Ignore(lp => lp.UpdatedAt);
+
         builder.HasOne(lp => lp.Project)
             .WithMany(p => p.LlmPrompts)
             .HasForeignKey(lp => lp.ProjectId);
 
         builder.HasOne(lp => lp.User)
             .WithMany(u => u.Prompts)
-            .HasForeignKey(lp => lp.UserId);
+            .HasForeignKey(lp => lp.UserId)
+            .HasPrincipalKey(u => u.SupabaseUserId);
     }
 }
 

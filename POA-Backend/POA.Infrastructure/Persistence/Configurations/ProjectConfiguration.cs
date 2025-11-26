@@ -38,13 +38,17 @@ public sealed class ProjectConfiguration : IEntityTypeConfiguration<Project>
             .HasColumnName("created_at")
             .HasColumnType("timestamptz");
 
+        // Projects table doesn't have updated_at column, so ignore it
+        builder.Ignore(p => p.UpdatedAt);
+
         builder.HasOne(p => p.OwnerTeam)
             .WithMany(t => t.Projects)
             .HasForeignKey(p => p.OwnerTeamId);
 
         builder.HasOne(p => p.OwnerUser)
             .WithMany(u => u.OwnedProjects)
-            .HasForeignKey(p => p.OwnerUserId);
+            .HasForeignKey(p => p.OwnerUserId)
+            .HasPrincipalKey(u => u.SupabaseUserId);
     }
 }
 

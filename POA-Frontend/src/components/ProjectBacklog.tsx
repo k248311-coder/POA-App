@@ -69,27 +69,27 @@ export function ProjectBacklog({ projectId, readOnly = false }: ProjectBacklogPr
 
   if (isLoading) {
     content = (
-      <Card className="border-gray-200">
-        <CardContent className="py-12 text-center text-gray-600">
-          Loading backlog...
-        </CardContent>
-      </Card>
+        <Card className="border-gray-200">
+          <CardContent className="py-12 text-center text-gray-600">
+            Loading backlog...
+          </CardContent>
+        </Card>
     );
   } else if (error) {
     content = (
-      <Card className="border-red-200 bg-red-50">
-        <CardContent className="py-12 text-center text-red-600">
-          {error}
-        </CardContent>
-      </Card>
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="py-12 text-center text-red-600">
+            {error}
+          </CardContent>
+        </Card>
     );
   } else if (!backlog) {
     content = (
-      <Card className="border-gray-200">
-        <CardContent className="py-12 text-center text-gray-600">
-          No backlog data available for this project.
-        </CardContent>
-      </Card>
+        <Card className="border-gray-200">
+          <CardContent className="py-12 text-center text-gray-600">
+            No backlog data available for this project.
+          </CardContent>
+        </Card>
     );
   } else {
     content = (

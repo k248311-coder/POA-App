@@ -35,6 +35,9 @@ public sealed class EpicConfiguration : IEntityTypeConfiguration<Epic>
             .HasColumnName("created_at")
             .HasColumnType("timestamptz");
 
+        // Epics table doesn't have updated_at column, so ignore it
+        builder.Ignore(e => e.UpdatedAt);
+
         builder.HasOne(e => e.Project)
             .WithMany(p => p.Epics)
             .HasForeignKey(e => e.ProjectId);

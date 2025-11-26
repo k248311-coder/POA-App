@@ -7,5 +7,7 @@ namespace POA.Application.Auth.Interfaces;
 public interface IAuthService
 {
     Task<SignupResultDto> SignupAsync(SignupRequestDto request, CancellationToken cancellationToken = default);
+    
+    Task<LoginResultDto> LoginAsync(LoginRequestDto request, CancellationToken cancellationToken = default);
 }
 

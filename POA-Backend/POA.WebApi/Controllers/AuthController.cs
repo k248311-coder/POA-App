@@ -28,5 +28,22 @@ public sealed class AuthController(IAuthService authService) : ControllerBase
 
         return CreatedAtAction(nameof(Signup), new { id = result.UserId }, result);
     }
+
+    [HttpPost("login")]
+    [ProducesResponseType(typeof(LoginResultDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Login([FromBody] LoginRequestDto request, CancellationToken cancellationToken)
+    {
+        var result = await authService.LoginAsync(request, cancellationToken);
+
+        if (!result.Success)
+        {
+            var message = result.Message ?? "Invalid email or password.";
+            return Unauthorized(message);
+        }
+
+        return Ok(result);
+    }
 }
 

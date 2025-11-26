@@ -10,13 +10,15 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
     {
         builder.ToTable("users", "public");
 
-        builder.HasKey(u => u.Id);
-
-        builder.Property(u => u.Id)
-            .HasColumnName("id");
+        // Use SupabaseUserId as primary key (references auth.users.id)
+        builder.HasKey(u => u.SupabaseUserId);
 
         builder.Property(u => u.SupabaseUserId)
-            .HasColumnName("supabase_user_id");
+            .HasColumnName("supabase_user_id")
+            .IsRequired();
+
+        // Ignore the Id property from BaseEntity since we use SupabaseUserId as PK
+        builder.Ignore(u => u.Id);
 
         builder.Property(u => u.Email)
             .HasColumnName("email");
@@ -31,6 +33,9 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.CreatedAt)
             .HasColumnName("created_at")
             .HasColumnType("timestamptz");
+
+        // Users table doesn't have updated_at column, so ignore it
+        builder.Ignore(u => u.UpdatedAt);
     }
 }
 

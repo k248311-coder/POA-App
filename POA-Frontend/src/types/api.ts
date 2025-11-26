@@ -122,3 +122,17 @@ export interface SignupResponse {
   message?: string | null;
 }
 
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface LoginResponse {
+  success: boolean;
+  userId: string | null;
+  email: string | null;
+  displayName: string | null;
+  role: string | null;
+  message?: string | null;
+}
+

@@ -31,13 +31,17 @@ public sealed class EstimateConfiguration : IEntityTypeConfiguration<Estimate>
             .HasColumnName("created_at")
             .HasColumnType("timestamptz");
 
+        // Estimates table doesn't have updated_at column, so ignore it
+        builder.Ignore(e => e.UpdatedAt);
+
         builder.HasOne(e => e.Task)
             .WithMany(t => t.Estimates)
             .HasForeignKey(e => e.TaskId);
 
         builder.HasOne(e => e.User)
             .WithMany(u => u.Estimates)
-            .HasForeignKey(e => e.UserId);
+            .HasForeignKey(e => e.UserId)
+            .HasPrincipalKey(u => u.SupabaseUserId);
     }
 }
 

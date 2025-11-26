@@ -26,7 +26,9 @@ public sealed class WorklogConfiguration : IEntityTypeConfiguration<Worklog>
             .HasColumnType("date");
 
         builder.Property(w => w.Hours)
-            .HasColumnName("hours");
+            .HasColumnName("hours")
+            .HasColumnType("numeric(8,2)")
+            .IsRequired();
 
         builder.Property(w => w.Description)
             .HasColumnName("description");
@@ -35,13 +37,17 @@ public sealed class WorklogConfiguration : IEntityTypeConfiguration<Worklog>
             .HasColumnName("created_at")
             .HasColumnType("timestamptz");
 
+        // Worklogs table doesn't have updated_at column, so ignore it
+        builder.Ignore(w => w.UpdatedAt);
+
         builder.HasOne(w => w.Task)
             .WithMany(t => t.Worklogs)
             .HasForeignKey(w => w.TaskId);
 
         builder.HasOne(w => w.User)
             .WithMany(u => u.Worklogs)
-            .HasForeignKey(w => w.UserId);
+            .HasForeignKey(w => w.UserId)
+            .HasPrincipalKey(u => u.SupabaseUserId);
     }
 }
 

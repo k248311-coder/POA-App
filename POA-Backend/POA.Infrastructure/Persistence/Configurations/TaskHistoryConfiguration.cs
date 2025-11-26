@@ -41,7 +41,8 @@ public sealed class TaskHistoryConfiguration : IEntityTypeConfiguration<TaskHist
 
         builder.HasOne(th => th.User)
             .WithMany(u => u.TaskHistories)
-            .HasForeignKey(th => th.UserId);
+            .HasForeignKey(th => th.UserId)
+            .HasPrincipalKey(u => u.SupabaseUserId);
     }
 }
 

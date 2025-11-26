@@ -32,6 +32,9 @@ public sealed class FeatureConfiguration : IEntityTypeConfiguration<Feature>
             .HasColumnName("created_at")
             .HasColumnType("timestamptz");
 
+        // Features table doesn't have updated_at column, so ignore it
+        builder.Ignore(f => f.UpdatedAt);
+
         builder.HasOne(f => f.Epic)
             .WithMany(e => e.Features)
             .HasForeignKey(f => f.EpicId);

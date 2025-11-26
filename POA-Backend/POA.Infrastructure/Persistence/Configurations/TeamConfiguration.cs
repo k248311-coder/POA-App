@@ -26,9 +26,13 @@ public sealed class TeamConfiguration : IEntityTypeConfiguration<Team>
             .HasColumnName("created_at")
             .HasColumnType("timestamptz");
 
+        // Teams table doesn't have updated_at column, so ignore it
+        builder.Ignore(t => t.UpdatedAt);
+
         builder.HasOne(t => t.Owner)
             .WithMany(u => u.OwnedTeams)
-            .HasForeignKey(t => t.OwnerId);
+            .HasForeignKey(t => t.OwnerId)
+            .HasPrincipalKey(u => u.SupabaseUserId);
     }
 }
 

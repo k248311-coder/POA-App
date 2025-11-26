@@ -32,14 +32,19 @@ public sealed class StoryConfiguration : IEntityTypeConfiguration<Story>
             .HasColumnName("story_points");
 
         builder.Property(s => s.EstimatedDevHours)
-            .HasColumnName("estimated_dev_hours");
+            .HasColumnName("estimated_dev_hours")
+            .HasColumnType("numeric(8,2)");
 
         builder.Property(s => s.EstimatedTestHours)
-            .HasColumnName("estimated_test_hours");
+            .HasColumnName("estimated_test_hours")
+            .HasColumnType("numeric(8,2)");
 
         builder.Property(s => s.CreatedAt)
             .HasColumnName("created_at")
             .HasColumnType("timestamptz");
+
+        // Stories table doesn't have updated_at column, so ignore it
+        builder.Ignore(s => s.UpdatedAt);
 
         builder.HasOne(s => s.Feature)
             .WithMany(f => f.Stories)

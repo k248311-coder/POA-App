@@ -3,7 +3,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { login } from "../lib/api";
 
 interface LoginPageProps {
   onLogin: (role: "po" | "team") => void;
@@ -14,11 +14,37 @@ interface LoginPageProps {
 export function LoginPage({ onLogin, onNavigateToSignup, onNavigateToJoinTeam }: LoginPageProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<"po" | "team">("po");
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onLogin(role);
+    setError(null);
+    setIsLoading(true);
+
+    try {
+      const response = await login({
+        email: email.trim(),
+        password,
+      });
+
+      if (!response.success || !response.role) {
+        setError(response.message ?? "Invalid email or password.");
+        return;
+      }
+
+      // Map backend role to frontend role
+      const frontendRole = response.role === "po" ? "po" : "team";
+      onLogin(frontendRole);
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Unable to login. Please try again.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -55,18 +81,11 @@ export function LoginPage({ onLogin, onNavigateToSignup, onNavigateToJoinTeam }:
                 required
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="role">Login As (Demo)</Label>
-              <Select value={role} onValueChange={(val) => setRole(val as "po" | "team")}>
-                <SelectTrigger id="role">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="po">Product Owner</SelectItem>
-                  <SelectItem value="team">Team Member (Dev/QA)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {error && (
+              <div className="text-sm text-red-600 bg-red-50 p-3 rounded border border-red-200">
+                {error}
+              </div>
+            )}
             <button
               type="button"
               className="text-teal-600 hover:text-teal-700 text-sm"
@@ -75,8 +94,12 @@ export function LoginPage({ onLogin, onNavigateToSignup, onNavigateToJoinTeam }:
             </button>
           </CardContent>
           <CardFooter className="flex flex-col space-y-3">
-            <Button type="submit" className="w-full bg-teal-600 hover:bg-teal-700">
-              Login
+            <Button 
+              type="submit" 
+              className="w-full bg-teal-600 hover:bg-teal-700"
+              disabled={isLoading}
+            >
+              {isLoading ? "Logging in..." : "Login"}
             </Button>
             <div className="text-center text-sm text-gray-600 space-y-2">
               <div>

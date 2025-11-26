@@ -30,10 +30,12 @@ public sealed class TaskConfiguration : IEntityTypeConfiguration<TaskEntity>
             .HasDefaultValue("feature");
 
         builder.Property(t => t.DevHours)
-            .HasColumnName("dev_hours");
+            .HasColumnName("dev_hours")
+            .HasColumnType("numeric(8,2)");
 
         builder.Property(t => t.TestHours)
-            .HasColumnName("test_hours");
+            .HasColumnName("test_hours")
+            .HasColumnType("numeric(8,2)");
 
         builder.Property(t => t.AssigneeId)
             .HasColumnName("assignee_id");
@@ -42,13 +44,18 @@ public sealed class TaskConfiguration : IEntityTypeConfiguration<TaskEntity>
             .HasColumnName("assignee_role");
 
         builder.Property(t => t.CostDev)
-            .HasColumnName("cost_dev");
+            .HasColumnName("cost_dev")
+            .HasColumnType("numeric(12,2)")
+            .HasDefaultValue(0m);
 
         builder.Property(t => t.CostTest)
-            .HasColumnName("cost_test");
+            .HasColumnName("cost_test")
+            .HasColumnType("numeric(12,2)")
+            .HasDefaultValue(0m);
 
         builder.Property(t => t.TotalCost)
-            .HasColumnName("total_cost");
+            .HasColumnName("total_cost")
+            .HasColumnType("numeric(14,2)");
 
         builder.Property(t => t.Status)
             .HasColumnName("status")
@@ -77,7 +84,8 @@ public sealed class TaskConfiguration : IEntityTypeConfiguration<TaskEntity>
 
         builder.HasOne(t => t.Assignee)
             .WithMany(u => u.AssignedTasks)
-            .HasForeignKey(t => t.AssigneeId);
+            .HasForeignKey(t => t.AssigneeId)
+            .HasPrincipalKey(u => u.SupabaseUserId);
 
         builder.HasOne(t => t.Sprint)
             .WithMany(s => s.Tasks)

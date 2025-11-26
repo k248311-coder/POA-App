@@ -6,7 +6,7 @@ namespace POA.Domain.Entities;
 
 public sealed class User : BaseAuditableEntity
 {
-    public Guid? SupabaseUserId { get; set; }
+    public Guid SupabaseUserId { get; set; }
 
     public string? Email { get; set; }
 

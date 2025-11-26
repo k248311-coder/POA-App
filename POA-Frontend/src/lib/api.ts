@@ -1,4 +1,6 @@
 import type {
+  LoginRequest,
+  LoginResponse,
   ProjectBacklog,
   ProjectEstimate,
   ProjectSummary,
@@ -8,25 +10,60 @@ import type {
   SignupResponse,
 } from "../types/api";
 
-const DEFAULT_API_BASE_URL = "http://localhost:5000";
+const DEFAULT_API_BASE_URLS = [
+  "https://localhost:5001",
+  "http://localhost:5000",
+  "http://localhost:5001",
+];
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? DEFAULT_API_BASE_URL;
+const API_BASE_URL = (import.meta as unknown as { env: { VITE_API_BASE_URL?: string } }).env.VITE_API_BASE_URL;
 
 async function fetchJson<T>(input: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${input}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...(init?.headers ?? {}),
-    },
-    ...init,
-  });
+  const urlsToTry = API_BASE_URL
+    ? [API_BASE_URL]
+    : DEFAULT_API_BASE_URLS;
 
-  if (!response.ok) {
-    const message = await response.text();
-    throw new Error(message || `Request failed with status ${response.status}`);
+  let lastError: Error | null = null;
+
+  for (const baseUrl of urlsToTry) {
+    try {
+      const response = await fetch(`${baseUrl}${input}`, {
+        headers: {
+          "Content-Type": "application/json",
+          ...(init?.headers ?? {}),
+        },
+        ...init,
+      });
+
+      if (!response.ok) {
+        const message = await response.text();
+        throw new Error(message || `Request failed with status ${response.status}`);
+      }
+
+      return (await response.json()) as T;
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      
+      // If it's a network error and we have more URLs to try, continue
+      if (
+        error instanceof TypeError &&
+        error.message.includes("fetch") &&
+        urlsToTry.indexOf(baseUrl) < urlsToTry.length - 1
+      ) {
+        continue;
+      }
+      
+      // If it's not a network error, or it's the last URL, throw immediately
+      if (!(error instanceof TypeError && error.message.includes("fetch"))) {
+        throw error;
+      }
+    }
   }
 
-  return (await response.json()) as T;
+  // If we get here, all URLs failed
+  throw new Error(
+    `Unable to connect to backend. Tried: ${urlsToTry.join(", ")}. Make sure the backend is running.`
+  );
 }
 
 export function getProjects(signal?: AbortSignal) {
@@ -51,6 +88,14 @@ export function getProjectWorklogs(projectId: string, signal?: AbortSignal) {
 
 export function signup(data: SignupRequest, signal?: AbortSignal) {
   return fetchJson<SignupResponse>("/api/auth/signup", {
+    method: "POST",
+    body: JSON.stringify(data),
+    signal,
+  });
+}
+
+export function login(data: LoginRequest, signal?: AbortSignal) {
+  return fetchJson<LoginResponse>("/api/auth/login", {
     method: "POST",
     body: JSON.stringify(data),
     signal,

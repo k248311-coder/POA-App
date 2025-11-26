@@ -43,6 +43,9 @@ public sealed class SrsJobConfiguration : IEntityTypeConfiguration<SrsJob>
             .HasColumnName("created_at")
             .HasColumnType("timestamptz");
 
+        // SrsJobs table doesn't have updated_at column, so ignore it
+        builder.Ignore(job => job.UpdatedAt);
+
         builder.HasOne(job => job.Project)
             .WithMany(project => project.SrsJobs)
             .HasForeignKey(job => job.ProjectId);

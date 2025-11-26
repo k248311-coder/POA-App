@@ -61,7 +61,7 @@ export function SignupPage({ onSignupComplete, onNavigateToLogin }: SignupPagePr
         return;
       }
 
-      onSignupComplete();
+    onSignupComplete();
     } catch (error) {
       if (error instanceof Error) {
         setSubmitError(error.message);
