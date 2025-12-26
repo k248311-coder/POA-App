@@ -3,26 +3,34 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Badge } from "./ui/badge";
-import { Search, FolderKanban, Plus, Users, Calendar, TrendingUp } from "lucide-react";
+import { Avatar, AvatarFallback } from "./ui/avatar";
+import { Search, FolderKanban, Plus, Users, Calendar, TrendingUp, LogOut } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import type { ProjectSummary } from "../types/api";
 import { getProjects } from "../lib/api";
 
 interface ProjectSelectionPageProps {
   userRole: "po" | "team";
+  userEmail?: string | null;
+  userDisplayName?: string | null;
   onSelectProject: (project: ProjectSummary) => void;
+  onLogout: () => void;
   onCreateProject?: () => void;
 }
 
 export function ProjectSelectionPage({
   userRole,
+  userEmail,
+  userDisplayName,
   onSelectProject,
+  onLogout,
   onCreateProject,
 }: ProjectSelectionPageProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [projects, setProjects] = useState<ProjectSummary[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -71,8 +79,80 @@ export function ProjectSelectionPage({
     return "bg-gray-300";
   };
 
+  // Get user initials for avatar
+  const getUserInitials = () => {
+    if (userDisplayName) {
+      const parts = userDisplayName.trim().split(" ");
+      if (parts.length >= 2) {
+        return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+      }
+      return userDisplayName.substring(0, 2).toUpperCase();
+    }
+    if (userEmail) {
+      return userEmail.substring(0, 2).toUpperCase();
+    }
+    return "U";
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Navbar */}
+      <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            {/* POA Logo on Left */}
+            <div className="flex items-center">
+              <h1 className="text-xl font-semibold text-teal-600">POA Platform</h1>
+            </div>
+            
+            {/* Profile Dropdown on Right */}
+            <div className="flex items-center">
+              <div 
+                className="relative"
+                onMouseEnter={() => setIsProfileOpen(true)}
+                onMouseLeave={() => setIsProfileOpen(false)}
+              >
+                <button className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback className="bg-teal-600 text-white text-sm">
+                      {getUserInitials()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-gray-700 font-medium hidden sm:block">
+                    {userDisplayName || userEmail || "User"}
+                  </span>
+                </button>
+                
+                {/* Dropdown Content */}
+                {isProfileOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-md border border-gray-200 shadow-lg z-50">
+                    <div className="px-3 py-2.5">
+                      <p className="text-sm font-medium text-gray-900">
+                        {userDisplayName || "User"}
+                      </p>
+                      <p className="text-xs text-gray-500 truncate mt-0.5">
+                        {userEmail || "No email"}
+                      </p>
+                      <Badge variant="outline" className="mt-2 text-xs">
+                        {userRole === "po" ? "Product Owner" : "Team Member"}
+                      </Badge>
+                    </div>
+                    <div className="border-t border-gray-200"></div>
+                    <button
+                      onClick={onLogout}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors rounded-b-md"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </nav>
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">

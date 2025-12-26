@@ -34,8 +34,7 @@
               "RelativeToolTip": "POA.Application\\Projects\\Services\\ProjectWriteService.cs",
               "ViewState": "AgIAAD4AAAAAAAAAAAASwGYAAAARAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-12-23T14:02:23.028Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-12-23T14:02:23.028Z"
             },
             {
               "$type": "Document",
@@ -45,7 +44,7 @@
               "RelativeDocumentMoniker": "POA.Application\\Projects\\Services\\GeminiService.cs",
               "ToolTip": "D:\\POA-App\\POA-Backend\\POA.Application\\Projects\\Services\\GeminiService.cs",
               "RelativeToolTip": "POA.Application\\Projects\\Services\\GeminiService.cs",
-              "ViewState": "AgIAAAEAAAAAAAAAAAAQwCQAAAAIAAAAAAAAAA==",
+              "ViewState": "AgIAAAkAAAAAAAAAAAAUwCQAAAAIAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-12-23T14:02:05.271Z",
               "EditorCaption": ""
@@ -60,8 +59,7 @@
               "RelativeToolTip": "POA.Application\\Auth\\Services\\AuthService.cs",
               "ViewState": "AgIAACUAAAAAAAAAAAASwFEAAAA0AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-11-20T13:55:15.044Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-11-20T13:55:15.044Z"
             }
           ]
         }
