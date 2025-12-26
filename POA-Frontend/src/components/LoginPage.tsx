@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { login } from "../lib/api";
 
 interface LoginPageProps {
-  onLogin: (role: "po" | "team") => void;
+  onLogin: (role: "po" | "team", userId: string | null) => void;
   onNavigateToSignup: () => void;
   onNavigateToJoinTeam?: () => void;
 }
@@ -35,7 +35,7 @@ export function LoginPage({ onLogin, onNavigateToSignup, onNavigateToJoinTeam }:
 
       // Map backend role to frontend role
       const frontendRole = response.role === "po" ? "po" : "team";
-      onLogin(frontendRole);
+      onLogin(frontendRole, response.userId);
     } catch (err) {
       if (err instanceof Error) {
         setError(err.message);

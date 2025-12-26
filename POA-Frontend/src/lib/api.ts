@@ -1,4 +1,6 @@
 import type {
+  CreateProjectRequest,
+  CreateProjectResponse,
   LoginRequest,
   LoginResponse,
   ProjectBacklog,
@@ -100,6 +102,60 @@ export function login(data: LoginRequest, signal?: AbortSignal) {
     body: JSON.stringify(data),
     signal,
   });
+}
+
+export async function createProject(
+  data: CreateProjectRequest,
+  signal?: AbortSignal
+): Promise<CreateProjectResponse> {
+  const urlsToTry = API_BASE_URL
+    ? [API_BASE_URL]
+    : DEFAULT_API_BASE_URLS;
+
+  let lastError: Error | null = null;
+
+  for (const baseUrl of urlsToTry) {
+    try {
+      const formData = new FormData();
+      formData.append("name", data.name);
+      formData.append("ownerUserId", data.ownerUserId);
+      
+      if (data.srsFile) {
+        formData.append("srsFile", data.srsFile);
+      }
+
+      const response = await fetch(`${baseUrl}/api/projects?ownerUserId=${data.ownerUserId}`, {
+        method: "POST",
+        body: formData,
+        signal,
+      });
+
+      if (!response.ok) {
+        const message = await response.text();
+        throw new Error(message || `Request failed with status ${response.status}`);
+      }
+
+      return (await response.json()) as CreateProjectResponse;
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      
+      if (
+        error instanceof TypeError &&
+        error.message.includes("fetch") &&
+        urlsToTry.indexOf(baseUrl) < urlsToTry.length - 1
+      ) {
+        continue;
+      }
+      
+      if (!(error instanceof TypeError && error.message.includes("fetch"))) {
+        throw error;
+      }
+    }
+  }
+
+  throw new Error(
+    `Unable to connect to backend. Tried: ${urlsToTry.join(", ")}. Make sure the backend is running.`
+  );
 }
 
 export { API_BASE_URL };

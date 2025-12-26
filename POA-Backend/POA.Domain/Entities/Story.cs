@@ -23,5 +23,7 @@ public sealed class Story : BaseAuditableEntity
     public Feature? Feature { get; set; }
 
     public ICollection<Task> Tasks { get; set; } = new List<Task>();
+
+    public ICollection<TestCase> TestCases { get; set; } = new List<TestCase>();
 }
 

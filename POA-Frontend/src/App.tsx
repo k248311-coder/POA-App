@@ -27,17 +27,20 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>("login");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userRole, setUserRole] = useState<UserRole>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [selectedProject, setSelectedProject] = useState<ProjectSummary | null>(null);
 
-  const handleLogin = (role: "po" | "team") => {
+  const handleLogin = (role: "po" | "team", id: string | null) => {
     setIsAuthenticated(true);
     setUserRole(role);
+    setUserId(id);
     setCurrentPage("projectselection");
   };
 
-  const handleSignupComplete = () => {
+  const handleSignupComplete = (id: string | null) => {
     setIsAuthenticated(true);
     setUserRole("po"); // Signup creates a PO account
+    setUserId(id);
     setCurrentPage("projectselection");
   };
 
@@ -55,6 +58,7 @@ export default function App() {
   const handleLogout = () => {
     setIsAuthenticated(false);
     setUserRole(null);
+    setUserId(null);
     setSelectedProject(null);
     setCurrentPage("login");
   };
@@ -68,15 +72,46 @@ export default function App() {
     setCurrentPage("projectselection");
   };
 
-  const handleCreateProject = (projectName: string, srsFile: File | null) => {
-    // Create a new project
-    const newProject = {
-      id: Date.now().toString(),
-      name: projectName,
-    };
-    setSelectedProject(newProject);
-    toast.success(`Project "${projectName}" created successfully!`);
-    setCurrentPage("dashboard");
+  const handleCreateProject = async (projectName: string, srsFile: File | null) => {
+    if (!userId) {
+      toast.error("User ID is missing. Please login again.");
+      return;
+    }
+
+    try {
+      if (srsFile) {
+        toast.info("Processing SRS document with AI. This may take a moment...");
+      }
+      
+      const { createProject } = await import("./lib/api");
+      const response = await createProject({
+        name: projectName,
+        srsFile,
+        ownerUserId: userId,
+      });
+
+      // Create a project summary from the response
+      const newProject: ProjectSummary = {
+        id: response.projectId,
+        name: response.name,
+        description: null,
+        status: "active",
+        progressPercent: 0,
+        teamMemberCount: 0,
+        lastUpdated: null,
+        totalStories: 0,
+        totalTasks: 0,
+        completedTasks: 0,
+      };
+
+      setSelectedProject(newProject);
+      toast.success(`Project "${projectName}" created successfully!${srsFile ? " SRS processed and hierarchy generated." : ""}`);
+      setCurrentPage("dashboard");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to create project";
+      toast.error(message);
+      throw error; // Re-throw so NewProjectPage can reset loading state
+    }
   };
 
   // Authentication pages
@@ -84,7 +119,7 @@ export default function App() {
     if (currentPage === "signup") {
       return (
         <SignupPage
-          onSignupComplete={handleSignupComplete}
+          onSignupComplete={(id) => handleSignupComplete(id)}
           onNavigateToLogin={() => setCurrentPage("login")}
         />
       );
@@ -94,12 +129,12 @@ export default function App() {
       return <JoinTeamPage onJoinComplete={handleJoinComplete} />;
     }
 
-    return (
-      <LoginPage
-        onLogin={handleLogin}
-        onNavigateToSignup={() => setCurrentPage("signup")}
-      />
-    );
+      return (
+        <LoginPage
+          onLogin={(role, userId) => handleLogin(role, userId)}
+          onNavigateToSignup={() => setCurrentPage("signup")}
+        />
+      );
   }
 
   // New project page

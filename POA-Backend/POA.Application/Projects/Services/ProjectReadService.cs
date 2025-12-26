@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using POA.Application.Common.Interfaces;
 using POA.Application.Projects.Dtos;
 using POA.Application.Projects.Interfaces;
+using TaskEntity = POA.Domain.Entities.Task;
 
 namespace POA.Application.Projects.Services;
 

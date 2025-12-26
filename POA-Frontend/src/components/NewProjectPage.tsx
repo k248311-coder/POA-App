@@ -15,6 +15,7 @@ export function NewProjectPage({ onCreateProject, onCancel }: NewProjectPageProp
   const [projectName, setProjectName] = useState("");
   const [srsFile, setSrsFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -63,12 +64,19 @@ export function NewProjectPage({ onCreateProject, onCancel }: NewProjectPageProp
     toast.info("SRS document removed");
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (!projectName.trim()) {
       toast.error("Please enter a project name");
       return;
     }
-    onCreateProject(projectName, srsFile);
+    
+    setIsProcessing(true);
+    try {
+      await onCreateProject(projectName, srsFile);
+    } catch (error) {
+      // Error is handled in App.tsx, but we need to reset loading state
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -192,9 +200,16 @@ export function NewProjectPage({ onCreateProject, onCancel }: NewProjectPageProp
             <Button
               onClick={handleContinue}
               className="flex-1 bg-teal-600 hover:bg-teal-700 text-white"
-              disabled={!projectName.trim()}
+              disabled={!projectName.trim() || isProcessing}
             >
-              Continue
+              {isProcessing ? (
+                <>
+                  <span className="animate-spin mr-2">⏳</span>
+                  Processing SRS with AI...
+                </>
+              ) : (
+                "Continue"
+              )}
             </Button>
           </div>
         </CardContent>

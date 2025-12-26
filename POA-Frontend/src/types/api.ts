@@ -136,3 +136,15 @@ export interface LoginResponse {
   message?: string | null;
 }
 
+export interface CreateProjectRequest {
+  name: string;
+  srsFile?: File | null;
+  ownerUserId: string;
+}
+
+export interface CreateProjectResponse {
+  projectId: string;
+  name: string;
+  message?: string | null;
+}
+

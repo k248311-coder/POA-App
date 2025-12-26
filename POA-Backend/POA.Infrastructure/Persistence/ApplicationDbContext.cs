@@ -15,6 +15,8 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
 
     public DbSet<Story> Stories => Set<Story>();
 
+    public DbSet<TestCase> TestCases => Set<TestCase>();
+
     public DbSet<Domain.Entities.Task> Tasks => Set<Domain.Entities.Task>();
 
     public DbSet<TaskHistory> TaskHistory => Set<TaskHistory>();

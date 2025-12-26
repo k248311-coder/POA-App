@@ -7,7 +7,7 @@ import { Plus, X } from "lucide-react";
 import { signup } from "../lib/api";
 
 interface SignupPageProps {
-  onSignupComplete: () => void;
+  onSignupComplete: (userId: string | null) => void;
   onNavigateToLogin: () => void;
 }
 
@@ -61,7 +61,7 @@ export function SignupPage({ onSignupComplete, onNavigateToLogin }: SignupPagePr
         return;
       }
 
-    onSignupComplete();
+    onSignupComplete(response.userId);
     } catch (error) {
       if (error instanceof Error) {
         setSubmitError(error.message);

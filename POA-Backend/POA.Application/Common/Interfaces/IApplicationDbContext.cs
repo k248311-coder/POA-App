@@ -16,6 +16,8 @@ public interface IApplicationDbContext
 
     DbSet<Story> Stories { get; }
 
+    DbSet<TestCase> TestCases { get; }
+
     DbSet<TaskEntity> Tasks { get; }
 
     DbSet<TaskHistory> TaskHistory { get; }

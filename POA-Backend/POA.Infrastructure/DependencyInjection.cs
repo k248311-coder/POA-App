@@ -2,6 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using POA.Application.Common.Interfaces;
+using POA.Application.Projects.Interfaces;
+using POA.Infrastructure.FileStorage;
 using POA.Infrastructure.Persistence;
 
 namespace POA.Infrastructure;
@@ -20,9 +22,12 @@ public static class DependencyInjection
             {
                 builder.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
             });
+            // Don't validate connection on startup - validate on first use
+            options.EnableServiceProviderCaching();
         });
 
         services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
+        services.AddScoped<IFileStorageService, LocalFileStorageService>();
 
         AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 

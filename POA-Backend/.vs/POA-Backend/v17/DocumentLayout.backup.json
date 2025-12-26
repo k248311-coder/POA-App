@@ -3,8 +3,12 @@
   "WorkspaceRootPath": "D:\\POA-App\\POA-Backend\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{5B07C37A-992D-46CF-B36F-E91C8E6E92B2}|POA.Application\\POA.Application.csproj|d:\\poa-app\\poa-backend\\poa.application\\auth\\services\\supabaseauthservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{5B07C37A-992D-46CF-B36F-E91C8E6E92B2}|POA.Application\\POA.Application.csproj|solutionrelative:poa.application\\auth\\services\\supabaseauthservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{5B07C37A-992D-46CF-B36F-E91C8E6E92B2}|POA.Application\\POA.Application.csproj|d:\\poa-app\\poa-backend\\poa.application\\projects\\services\\geminiservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{5B07C37A-992D-46CF-B36F-E91C8E6E92B2}|POA.Application\\POA.Application.csproj|solutionrelative:poa.application\\projects\\services\\geminiservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{5B07C37A-992D-46CF-B36F-E91C8E6E92B2}|POA.Application\\POA.Application.csproj|d:\\poa-app\\poa-backend\\poa.application\\projects\\services\\projectwriteservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{5B07C37A-992D-46CF-B36F-E91C8E6E92B2}|POA.Application\\POA.Application.csproj|solutionrelative:poa.application\\projects\\services\\projectwriteservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{5B07C37A-992D-46CF-B36F-E91C8E6E92B2}|POA.Application\\POA.Application.csproj|d:\\poa-app\\poa-backend\\poa.application\\auth\\services\\authservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -18,30 +22,43 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 0,
+          "SelectedChildIndex": 1,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "SupabaseAuthService.cs",
-              "DocumentMoniker": "D:\\POA-App\\POA-Backend\\POA.Application\\Auth\\Services\\SupabaseAuthService.cs",
-              "RelativeDocumentMoniker": "POA.Application\\Auth\\Services\\SupabaseAuthService.cs",
-              "ToolTip": "D:\\POA-App\\POA-Backend\\POA.Application\\Auth\\Services\\SupabaseAuthService.cs",
-              "RelativeToolTip": "POA.Application\\Auth\\Services\\SupabaseAuthService.cs",
-              "ViewState": "AgIAAEEAAAAAAAAAAAAAADYAAAAxAAAAAAAAAA==",
+              "DocumentIndex": 1,
+              "Title": "ProjectWriteService.cs",
+              "DocumentMoniker": "D:\\POA-App\\POA-Backend\\POA.Application\\Projects\\Services\\ProjectWriteService.cs",
+              "RelativeDocumentMoniker": "POA.Application\\Projects\\Services\\ProjectWriteService.cs",
+              "ToolTip": "D:\\POA-App\\POA-Backend\\POA.Application\\Projects\\Services\\ProjectWriteService.cs",
+              "RelativeToolTip": "POA.Application\\Projects\\Services\\ProjectWriteService.cs",
+              "ViewState": "AgIAAD4AAAAAAAAAAAASwGYAAAARAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-11-26T16:44:05.336Z",
+              "WhenOpened": "2025-12-23T14:02:23.028Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 0,
+              "Title": "GeminiService.cs",
+              "DocumentMoniker": "D:\\POA-App\\POA-Backend\\POA.Application\\Projects\\Services\\GeminiService.cs",
+              "RelativeDocumentMoniker": "POA.Application\\Projects\\Services\\GeminiService.cs",
+              "ToolTip": "D:\\POA-App\\POA-Backend\\POA.Application\\Projects\\Services\\GeminiService.cs",
+              "RelativeToolTip": "POA.Application\\Projects\\Services\\GeminiService.cs",
+              "ViewState": "AgIAAAEAAAAAAAAAAAAQwCQAAAAIAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-12-23T14:02:05.271Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
               "Title": "AuthService.cs",
               "DocumentMoniker": "D:\\POA-App\\POA-Backend\\POA.Application\\Auth\\Services\\AuthService.cs",
               "RelativeDocumentMoniker": "POA.Application\\Auth\\Services\\AuthService.cs",
               "ToolTip": "D:\\POA-App\\POA-Backend\\POA.Application\\Auth\\Services\\AuthService.cs",
               "RelativeToolTip": "POA.Application\\Auth\\Services\\AuthService.cs",
-              "ViewState": "AgIAAD0AAAAAAAAAAAASwFEAAAA0AAAAAAAAAA==",
+              "ViewState": "AgIAACUAAAAAAAAAAAASwFEAAAA0AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-11-20T13:55:15.044Z",
               "EditorCaption": ""
