@@ -1,0 +1,3 @@
+# Secrets file — never commit. Copy manually to trusted environments only.
+**/secrets.json
+POA-Backend/POA.WebApi/secrets.json

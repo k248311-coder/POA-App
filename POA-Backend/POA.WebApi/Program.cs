@@ -3,6 +3,9 @@ using POA.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Load secrets from optional file (gitignored). Copy to trusted environments only.
+builder.Configuration.AddJsonFile("secrets.json", optional: true, reloadOnChange: false);
+
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 

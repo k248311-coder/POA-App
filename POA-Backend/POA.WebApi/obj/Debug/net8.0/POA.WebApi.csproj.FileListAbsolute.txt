@@ -45,3 +45,4 @@ D:\POA-App\POA-Backend\POA.WebApi\obj\Debug\net8.0\POA.WebApi.pdb
 D:\POA-App\POA-Backend\POA.WebApi\obj\Debug\net8.0\POA.WebApi.genruntimeconfig.cache
 D:\POA-App\POA-Backend\POA.WebApi\obj\Debug\net8.0\ref\POA.WebApi.dll
 D:\POA-App\POA-Backend\POA.WebApi\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt
+D:\POA-App\POA-Backend\POA.WebApi\bin\Debug\net8.0\secrets.json
