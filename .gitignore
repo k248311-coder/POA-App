@@ -4,6 +4,6 @@ POA-Backend/POA.WebApi/secrets.json
 node_modules
 .vs
 .env
-./POA-Frontend/node_modules
-./POA-Frontend/.env
-./POA-Frontend/.vs
+POA-Frontend/node_modules
+POA-Frontend/.env
+POA-Frontend/.vs
