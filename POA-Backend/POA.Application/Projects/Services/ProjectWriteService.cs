@@ -83,6 +83,30 @@ public sealed class ProjectWriteService : IProjectWriteService
                 throw new InvalidOperationException($"Failed to process SRS document: {ex.Message}", ex);
             }
         }
+        else if (!string.IsNullOrWhiteSpace(srsDocumentPath))
+        {
+            // SRS queued: create job row for background worker (no Gemini call in API)
+            var job = new SrsJob
+            {
+                Id = Guid.NewGuid(),
+                ProjectId = project.Id,
+                SrsPath = srsDocumentPath,
+                Status = "queued",
+                CreatedAt = DateTimeOffset.UtcNow
+            };
+            _context.SrsJobs.Add(job);
+            Console.WriteLine($"[ProjectWriteService] SRS job queued: {job.Id} for project {project.Id}");
+
+            await _context.SaveChangesAsync(cancellationToken);
+
+            return new CreateProjectResponseDto
+            {
+                ProjectId = project.Id,
+                Name = project.Name,
+                Message = "Project created. SRS processing has been queued.",
+                JobId = job.Id
+            };
+        }
         else
         {
             Console.WriteLine($"[ProjectWriteService] No Gemini JSON response provided. Project will be created without hierarchy.");
@@ -98,6 +122,22 @@ public sealed class ProjectWriteService : IProjectWriteService
             Name = project.Name,
             Message = "Project created successfully"
         };
+    }
+
+    public async System.Threading.Tasks.Task ApplyGeminiHierarchyToProjectAsync(Guid projectId, string geminiJsonResponse, CancellationToken cancellationToken = default)
+    {
+        var project = await _context.Projects.FindAsync([projectId], cancellationToken);
+        if (project == null)
+            throw new InvalidOperationException($"Project {projectId} not found.");
+
+        var geminiResponse = JsonSerializer.Deserialize<GeminiSrsResponseDto>(
+            geminiJsonResponse,
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        if (geminiResponse?.Epics == null || geminiResponse.Epics.Count == 0)
+            throw new InvalidOperationException("Gemini response contains no epics.");
+
+        CreateProjectHierarchyAsync(project, geminiResponse, cancellationToken);
+        await _context.SaveChangesAsync(cancellationToken);
     }
 
     private void CreateProjectHierarchyAsync(

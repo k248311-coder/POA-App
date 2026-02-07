@@ -74,6 +74,7 @@ public sealed class ProjectsController : ControllerBase
 
     [HttpPost]
     [ProducesResponseType(typeof(CreateProjectResponseDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(CreateProjectResponseDto), StatusCodes.Status202Accepted)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateProject(
         [FromForm] string name,
@@ -87,80 +88,57 @@ public sealed class ProjectsController : ControllerBase
         }
 
         string? srsDocumentPath = null;
-        string? geminiJsonResponse = null;
 
-        // Handle file upload if provided
+        // Async SRS workflow: upload to Supabase → create project + queue job → return 202 (worker processes later)
         if (srsFile != null && srsFile.Length > 0)
         {
-            // Validate file type
             var allowedExtensions = new[] { ".pdf", ".doc", ".docx", ".txt" };
             var fileExtension = Path.GetExtension(srsFile.FileName).ToLowerInvariant();
-            
             if (!allowedExtensions.Contains(fileExtension))
             {
                 return BadRequest($"Invalid file type. Allowed types: {string.Join(", ", allowedExtensions)}");
             }
 
-            // Save file and process with Gemini
-            // Note: We need to read the stream twice - once for saving, once for Gemini
-            // For large files, consider buffering or using a different approach
-            byte[] fileBytes;
-            using (var fileStream = srsFile.OpenReadStream())
+            using (var uploadStream = srsFile.OpenReadStream())
             {
-                using (var memoryStream = new MemoryStream())
-                {
-                    await fileStream.CopyToAsync(memoryStream, cancellationToken);
-                    fileBytes = memoryStream.ToArray();
-                }
+                srsDocumentPath = await _fileStorageService.SaveFileAsync(uploadStream, srsFile.FileName, cancellationToken);
             }
+            Console.WriteLine($"[ProjectsController] SRS uploaded to Supabase: {srsDocumentPath}");
 
-            // Save file
-            using (var fileStream = new MemoryStream(fileBytes))
-            {
-                srsDocumentPath = await _fileStorageService.SaveFileAsync(fileStream, srsFile.FileName, cancellationToken);
-            }
+            var request = new CreateProjectRequestDto { Name = name };
+            var response = await _projectWriteService.CreateProjectAsync(
+                request,
+                srsDocumentPath,
+                geminiJsonResponse: null,
+                ownerUserId,
+                cancellationToken);
 
-            // Process document with Gemini
-            Console.WriteLine($"[ProjectsController] ====== STARTING SRS PROCESSING ======");
-            Console.WriteLine($"[ProjectsController] Processing SRS file with Gemini: {srsFile.FileName} ({srsFile.Length} bytes)");
-            try
-            {
-                using (var fileStream = new MemoryStream(fileBytes))
-                {
-                    geminiJsonResponse = await _geminiService.ProcessSrsDocumentAsync(fileStream, srsFile.FileName, cancellationToken);
-                    Console.WriteLine($"[ProjectsController] Gemini processing successful. Response length: {geminiJsonResponse?.Length ?? 0}");
-                    if (string.IsNullOrWhiteSpace(geminiJsonResponse))
-                    {
-                        throw new InvalidOperationException("Gemini API returned empty response");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                // Log full error details and fail project creation if SRS processing fails
-                Console.WriteLine($"[ProjectsController] ====== ERROR PROCESSING SRS ======");
-                Console.WriteLine($"[ProjectsController]   File: {srsFile.FileName}");
-                Console.WriteLine($"[ProjectsController]   Error: {ex.Message}");
-                Console.WriteLine($"[ProjectsController]   StackTrace: {ex.StackTrace}");
-                if (ex.InnerException != null)
-                {
-                    Console.WriteLine($"[ProjectsController]   InnerException: {ex.InnerException.Message}");
-                }
-                // Fail the request if SRS processing fails
-                return BadRequest($"Failed to process SRS document: {ex.Message}");
-            }
+            // 202 Accepted: project and job created; client should poll job/project status
+            return AcceptedAtAction(nameof(GetProjectSrsJobStatus), new { projectId = response.ProjectId }, response);
         }
 
-        // Create project
-        var request = new CreateProjectRequestDto { Name = name };
-        var response = await _projectWriteService.CreateProjectAsync(
-            request,
-            srsDocumentPath,
-            geminiJsonResponse,
+        // No SRS: create project synchronously, return 201
+        var createRequest = new CreateProjectRequestDto { Name = name };
+        var createResponse = await _projectWriteService.CreateProjectAsync(
+            createRequest,
+            srsDocumentPath: null,
+            geminiJsonResponse: null,
             ownerUserId,
             cancellationToken);
 
-        return CreatedAtAction(nameof(GetProjects), new { userId = ownerUserId }, response);
+        return CreatedAtAction(nameof(GetProjects), new { userId = ownerUserId }, createResponse);
+    }
+
+    /// <summary>Get SRS job status for a project (for polling after 202 Accepted).</summary>
+    [HttpGet("{projectId:guid}/srs-job")]
+    [ProducesResponseType(typeof(SrsJobStatusDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetProjectSrsJobStatus([FromRoute] Guid projectId, CancellationToken cancellationToken)
+    {
+        var job = await _projectReadService.GetLatestSrsJobByProjectIdAsync(projectId, cancellationToken);
+        if (job == null)
+            return NotFound();
+        return Ok(job);
     }
 }
 

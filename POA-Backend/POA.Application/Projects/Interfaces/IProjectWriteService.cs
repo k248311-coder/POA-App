@@ -11,5 +11,8 @@ public interface IProjectWriteService
         string? geminiJsonResponse,
         Guid ownerUserId,
         CancellationToken cancellationToken = default);
+
+    /// <summary>Applies Gemini hierarchy (epics/features/stories) to an existing project. Used by the SRS job worker.</summary>
+    Task ApplyGeminiHierarchyToProjectAsync(Guid projectId, string geminiJsonResponse, CancellationToken cancellationToken = default);
 }
 

@@ -17,5 +17,7 @@ public interface IProjectReadService
     Task<IReadOnlyList<ProjectEstimateDto>> GetProjectEstimatesAsync(Guid projectId, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<ProjectWorklogDto>> GetProjectWorklogsAsync(Guid projectId, CancellationToken cancellationToken = default);
+
+    Task<SrsJobStatusDto?> GetLatestSrsJobByProjectIdAsync(Guid projectId, CancellationToken cancellationToken = default);
 }
 

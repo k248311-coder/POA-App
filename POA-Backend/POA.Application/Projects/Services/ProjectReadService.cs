@@ -374,5 +374,27 @@ public sealed class ProjectReadService(IApplicationDbContext context) : IProject
 
         return inProgress > 0 ? "In Progress" : "To Do";
     }
+
+    public async Task<SrsJobStatusDto?> GetLatestSrsJobByProjectIdAsync(Guid projectId, CancellationToken cancellationToken = default)
+    {
+        var job = await context.SrsJobs
+            .AsNoTracking()
+            .Where(j => j.ProjectId == projectId)
+            .OrderByDescending(j => j.CreatedAt)
+            .FirstOrDefaultAsync(cancellationToken);
+        if (job == null)
+            return null;
+        return new SrsJobStatusDto
+        {
+            Id = job.Id,
+            ProjectId = job.ProjectId,
+            Status = job.Status,
+            StartedAt = job.StartedAt,
+            CompletedAt = job.CompletedAt,
+            ResultSummary = job.ResultSummary,
+            Error = job.Error,
+            CreatedAt = job.CreatedAt
+        };
+    }
 }
 
