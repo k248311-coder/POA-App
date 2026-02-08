@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("POA.Domain")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+1303e7e4d279c3fb0e01d1c6be2de9ed1a2d60ce")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a86d6351aabdb3768c23e3edc0cd8f70c1718322")]
 [assembly: System.Reflection.AssemblyProductAttribute("POA.Domain")]
 [assembly: System.Reflection.AssemblyTitleAttribute("POA.Domain")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

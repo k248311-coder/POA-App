@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using POA.Application.Projects.Interfaces;
 using POA.Domain.Entities;
 using POA.Infrastructure.Persistence;
+using SrsJobStatus = POA.Domain.Entities.SrsJobStatus;
 
 namespace POA.WebApi.Workers;
 
@@ -29,7 +30,7 @@ public sealed class SrsJobProcessingWorker : BackgroundService
 
     protected override async System.Threading.Tasks.Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("SRS job processing worker started.");
+        _logger.LogInformation("SRS Job Processing Worker started (polling srs_jobs every {Seconds}s).", PollInterval.TotalSeconds);
         while (!stoppingToken.IsCancellationRequested)
         {
             try
@@ -45,9 +46,16 @@ public sealed class SrsJobProcessingWorker : BackgroundService
                 _logger.LogError(ex, "SRS worker loop error");
             }
 
-            await System.Threading.Tasks.Task.Delay(PollInterval, stoppingToken);
+            try
+            {
+                await System.Threading.Tasks.Task.Delay(PollInterval, stoppingToken);
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
         }
-        _logger.LogInformation("SRS job processing worker stopped.");
+        _logger.LogInformation("SRS Job Processing Worker stopped.");
     }
 
     private async System.Threading.Tasks.Task ProcessOneJobAsync(CancellationToken cancellationToken)
@@ -60,7 +68,7 @@ public sealed class SrsJobProcessingWorker : BackgroundService
 
         var job = await context.SrsJobs
             .Include(j => j.Project)
-            .Where(j => j.Status == "queued")
+            .Where(j => j.Status == SrsJobStatus.queued)
             .OrderBy(j => j.CreatedAt)
             .FirstOrDefaultAsync(cancellationToken);
         if (job == null || job.Project == null)
@@ -68,7 +76,7 @@ public sealed class SrsJobProcessingWorker : BackgroundService
 
         _logger.LogInformation("Processing SRS job {JobId} for project {ProjectId}", job.Id, job.ProjectId);
 
-        job.Status = "processing";
+        job.Status = SrsJobStatus.sent;
         job.StartedAt = DateTimeOffset.UtcNow;
         await context.SaveChangesAsync(cancellationToken);
 
@@ -99,7 +107,7 @@ public sealed class SrsJobProcessingWorker : BackgroundService
             context.Entry(project).Property(nameof(Project.SrsPath)).IsModified = true;
             await context.SaveChangesAsync(cancellationToken);
 
-            job.Status = "completed";
+            job.Status = SrsJobStatus.completed;
             job.CompletedAt = DateTimeOffset.UtcNow;
             job.ResultSummary = "SRS processed successfully; hierarchy created.";
             job.Error = null;
@@ -110,7 +118,7 @@ public sealed class SrsJobProcessingWorker : BackgroundService
         catch (Exception ex)
         {
             _logger.LogError(ex, "SRS job {JobId} failed: {Message}", job.Id, ex.Message);
-            job.Status = "failed";
+            job.Status = SrsJobStatus.failed;
             job.CompletedAt = DateTimeOffset.UtcNow;
             job.Error = ex.Message;
             job.ResultSummary = null;

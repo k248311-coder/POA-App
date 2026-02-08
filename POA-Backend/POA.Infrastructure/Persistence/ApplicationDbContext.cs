@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using POA.Application.Common.Interfaces;
 using POA.Domain.Entities;
 
@@ -7,6 +8,10 @@ namespace POA.Infrastructure.Persistence;
 public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
     : DbContext(options), IApplicationDbContext
 {
+    static ApplicationDbContext()
+    {
+        NpgsqlConnection.GlobalTypeMapper.MapEnum<SrsJobStatus>("llm_prompt_status");
+    }
     public DbSet<Project> Projects => Set<Project>();
 
     public DbSet<Epic> Epics => Set<Epic>();
@@ -38,6 +43,7 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        modelBuilder.HasPostgresEnum<SrsJobStatus>("llm_prompt_status");
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
     }
 }

@@ -23,7 +23,9 @@ public sealed class SrsJobConfiguration : IEntityTypeConfiguration<SrsJob>
 
         builder.Property(job => job.Status)
             .HasColumnName("status")
-            .HasDefaultValue("queued");
+            .HasConversion<SrsJobStatus>()
+            .HasColumnType("llm_prompt_status")
+            .HasDefaultValue(SrsJobStatus.queued);
 
         builder.Property(job => job.StartedAt)
             .HasColumnName("started_at")

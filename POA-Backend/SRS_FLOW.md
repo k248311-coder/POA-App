@@ -19,6 +19,14 @@
 
 **No SRS file:** `POST /api/projects` with no file creates the project synchronously and returns **201 Created** (no job).
 
-**Database:** The worker uses `srs_jobs.status` values: `queued`, `processing`, `completed`, `failed`. If your `status` column uses a Postgres enum (e.g. `llm_prompt_status`), ensure that enum includes these values (or alter the enum / use a text column).
+**Database:** The `srs_jobs.status` column uses the PostgreSQL enum type `llm_prompt_status`. The code expects these enum values: `queued`, `processing`, `completed`, `failed`. If your enum does not have all of them, run in the Supabase SQL editor:
+
+```sql
+ALTER TYPE llm_prompt_status ADD VALUE IF NOT EXISTS 'processing';
+ALTER TYPE llm_prompt_status ADD VALUE IF NOT EXISTS 'completed';
+ALTER TYPE llm_prompt_status ADD VALUE IF NOT EXISTS 'failed';
+```
+
+(On older PostgreSQL, use `ALTER TYPE llm_prompt_status ADD VALUE 'processing';` etc. without `IF NOT EXISTS`.)
 
 See **SUPABASE_STORAGE.md** for bucket setup, **ProjectsController.CreateProject** and **SrsJobProcessingWorker** for the implementation.

@@ -6,6 +6,7 @@ using POA.Application.Projects.Dtos;
 using POA.Application.Projects.Interfaces;
 using POA.Domain.Entities;
 using TaskEntity = POA.Domain.Entities.Task;
+using SrsJobStatus = POA.Domain.Entities.SrsJobStatus;
 
 namespace POA.Application.Projects.Services;
 
@@ -91,7 +92,7 @@ public sealed class ProjectWriteService : IProjectWriteService
                 Id = Guid.NewGuid(),
                 ProjectId = project.Id,
                 SrsPath = srsDocumentPath,
-                Status = "queued",
+                Status = SrsJobStatus.queued,
                 CreatedAt = DateTimeOffset.UtcNow
             };
             _context.SrsJobs.Add(job);
