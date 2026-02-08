@@ -27,7 +27,8 @@ public static class DependencyInjection
         });
 
         services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
-        services.AddScoped<IFileStorageService, LocalFileStorageService>();
+        services.AddHttpClient();
+        services.AddScoped<IFileStorageService, SupabaseStorageService>();
 
         AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 

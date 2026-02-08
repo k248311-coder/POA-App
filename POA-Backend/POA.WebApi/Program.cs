@@ -1,7 +1,11 @@
 using POA.Application;
 using POA.Infrastructure;
+using POA.WebApi.Workers;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Load secrets from optional file (gitignored). Copy to trusted environments only.
+builder.Configuration.AddJsonFile("secrets.json", optional: true, reloadOnChange: false);
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
@@ -47,6 +51,7 @@ builder.Services.AddCors(options =>
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddHostedService<SrsJobProcessingWorker>();
 
 // Configure file upload limits
 builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>

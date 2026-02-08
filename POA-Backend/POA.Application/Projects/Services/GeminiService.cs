@@ -17,8 +17,8 @@ public sealed class GeminiService : IGeminiService
     {
         _httpClient = httpClient;
         _apiKey = configuration["Gemini:ApiKey"] ?? throw new InvalidOperationException("Gemini:ApiKey is not configured.");
-        // Using Gemini 2.0 Flash (experimental) - update to gemini-2.5-flash-lite when available
-        _apiUrl = configuration["Gemini:ApiUrl"] ?? "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent";
+        // Default: gemini-2.5-flash. Override with Gemini:ApiUrl if needed.
+        _apiUrl = configuration["Gemini:ApiUrl"] ?? "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
         if (string.IsNullOrWhiteSpace(_apiKey))
         {
