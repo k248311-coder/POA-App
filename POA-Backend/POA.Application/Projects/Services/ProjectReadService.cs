@@ -388,7 +388,7 @@ public sealed class ProjectReadService(IApplicationDbContext context) : IProject
         {
             Id = job.Id,
             ProjectId = job.ProjectId,
-            Status = job.Status,
+            Status = job.Status.ToString(),
             StartedAt = job.StartedAt,
             CompletedAt = job.CompletedAt,
             ResultSummary = job.ResultSummary,

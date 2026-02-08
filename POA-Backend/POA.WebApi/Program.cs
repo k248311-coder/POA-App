@@ -51,6 +51,7 @@ builder.Services.AddCors(options =>
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+// SRS worker runs in the same process as the API; no separate worker app needed.
 builder.Services.AddHostedService<SrsJobProcessingWorker>();
 
 // Configure file upload limits

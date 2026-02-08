@@ -9,7 +9,7 @@ public sealed class SrsJob : BaseAuditableEntity
 
     public string? SrsPath { get; set; }
 
-    public string Status { get; set; } = "queued";
+    public SrsJobStatus Status { get; set; } = SrsJobStatus.queued;
 
     public DateTimeOffset? StartedAt { get; set; }
 
