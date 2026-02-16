@@ -7,3 +7,4 @@ node_modules
 POA-Frontend/node_modules
 POA-Frontend/.env
 .vscode
+**/CopilotIndices/
