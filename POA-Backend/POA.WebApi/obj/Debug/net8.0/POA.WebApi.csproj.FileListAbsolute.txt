@@ -44,7 +44,6 @@ D:\POA-App\POA-Backend\POA.WebApi\obj\Debug\net8.0\refint\POA.WebApi.dll
 D:\POA-App\POA-Backend\POA.WebApi\obj\Debug\net8.0\POA.WebApi.pdb
 D:\POA-App\POA-Backend\POA.WebApi\obj\Debug\net8.0\POA.WebApi.genruntimeconfig.cache
 D:\POA-App\POA-Backend\POA.WebApi\obj\Debug\net8.0\ref\POA.WebApi.dll
-D:\POA-App\POA-Backend\POA.WebApi\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt
 D:\POA-App\POA-Backend\POA.WebApi\bin\Debug\net8.0\secrets.json
 C:\Users\NABI HASAN\Documents\Project\POA-Backend\POA.WebApi\bin\Debug\net8.0\appsettings.Development.json
 C:\Users\NABI HASAN\Documents\Project\POA-Backend\POA.WebApi\bin\Debug\net8.0\appsettings.json
@@ -96,3 +95,4 @@ C:\Users\NABI HASAN\Documents\Project\POA-Backend\POA.WebApi\obj\Debug\net8.0\PO
 C:\Users\NABI HASAN\Documents\Project\POA-Backend\POA.WebApi\obj\Debug\net8.0\POA.WebApi.genruntimeconfig.cache
 C:\Users\NABI HASAN\Documents\Project\POA-Backend\POA.WebApi\obj\Debug\net8.0\ref\POA.WebApi.dll
 C:\Users\NABI HASAN\Documents\Project\POA-Backend\POA.WebApi\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt
+D:\POA-App\POA-Backend\POA.WebApi\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt

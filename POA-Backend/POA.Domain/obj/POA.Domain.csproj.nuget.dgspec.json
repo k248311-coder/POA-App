@@ -1,23 +1,23 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\NABI HASAN\\Documents\\Project\\POA-Backend\\POA.Domain\\POA.Domain.csproj": {}
+    "D:\\POA-App\\POA-Backend\\POA.Domain\\POA.Domain.csproj": {}
   },
   "projects": {
-    "C:\\Users\\NABI HASAN\\Documents\\Project\\POA-Backend\\POA.Domain\\POA.Domain.csproj": {
+    "D:\\POA-App\\POA-Backend\\POA.Domain\\POA.Domain.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\NABI HASAN\\Documents\\Project\\POA-Backend\\POA.Domain\\POA.Domain.csproj",
+        "projectUniqueName": "D:\\POA-App\\POA-Backend\\POA.Domain\\POA.Domain.csproj",
         "projectName": "POA.Domain",
-        "projectPath": "C:\\Users\\NABI HASAN\\Documents\\Project\\POA-Backend\\POA.Domain\\POA.Domain.csproj",
-        "packagesPath": "C:\\Users\\NABI HASAN\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\NABI HASAN\\Documents\\Project\\POA-Backend\\POA.Domain\\obj\\",
+        "projectPath": "D:\\POA-App\\POA-Backend\\POA.Domain\\POA.Domain.csproj",
+        "packagesPath": "C:\\Users\\hassanab\\.nuget\\packages\\",
+        "outputPath": "D:\\POA-App\\POA-Backend\\POA.Domain\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\NABI HASAN\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\hassanab\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -44,7 +44,7 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "10.0.100"
+        "SdkAnalysisLevel": "9.0.300"
       },
       "frameworks": {
         "net8.0": {
@@ -65,7 +65,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.101/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.305/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

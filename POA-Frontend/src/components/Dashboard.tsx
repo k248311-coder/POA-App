@@ -1,43 +1,105 @@
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { FolderKanban, Clock, TestTube, DollarSign, TrendingUp, Activity } from "lucide-react";
-import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { getProjectDashboard } from "../lib/api";
+import type { ProjectSummary, ProjectDashboard } from "../types/api";
+import { formatDistanceToNow } from "date-fns";
 
-export function Dashboard() {
+interface DashboardProps {
+  project: ProjectSummary;
+}
+
+function formatCost(amount: number): string {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(amount);
+}
+
+export function Dashboard({ project }: DashboardProps) {
+  const [data, setData] = useState<ProjectDashboard | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const ac = new AbortController();
+
+    async function load() {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await getProjectDashboard(project.id, ac.signal);
+        if (!cancelled) setData(res);
+      } catch (e) {
+        if (!cancelled) {
+          setError(e instanceof Error ? e.message : "Failed to load dashboard data");
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+      ac.abort();
+    };
+  }, [project.id]);
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1>Dashboard</h1>
+          <p className="text-gray-600 mt-1">Overview of your project and team performance</p>
+        </div>
+        <div className="flex items-center justify-center py-12 text-gray-500">Loading dashboard…</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1>Dashboard</h1>
+          <p className="text-gray-600 mt-1">Overview of your project and team performance</p>
+        </div>
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">{error}</div>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return null;
+  }
+
   const kpiData = [
-    { title: "Total Projects", value: "12", icon: FolderKanban, color: "text-teal-600", bg: "bg-teal-50" },
-    { title: "Total Dev Hours", value: "2,450", icon: Clock, color: "text-blue-600", bg: "bg-blue-50" },
-    { title: "Total QA Hours", value: "980", icon: TestTube, color: "text-purple-600", bg: "bg-purple-50" },
-    { title: "Total Cost", value: "$128,500", icon: DollarSign, color: "text-green-600", bg: "bg-green-50" },
+    { title: "Total Stories", value: String(data.totalStories), icon: FolderKanban, color: "text-teal-600", bg: "bg-teal-50" },
+    { title: "Total Dev Hours", value: data.totalDevHours.toLocaleString("en-US", { maximumFractionDigits: 0 }), icon: Clock, color: "text-blue-600", bg: "bg-blue-50" },
+    { title: "Total QA Hours", value: data.totalQAHours.toLocaleString("en-US", { maximumFractionDigits: 0 }), icon: TestTube, color: "text-purple-600", bg: "bg-purple-50" },
+    { title: "Total Cost", value: formatCost(data.totalCost), icon: DollarSign, color: "text-green-600", bg: "bg-green-50" },
   ];
 
-  const burnupData = [
-    { week: "Week 1", planned: 100, actual: 85 },
-    { week: "Week 2", planned: 200, actual: 190 },
-    { week: "Week 3", planned: 300, actual: 280 },
-    { week: "Week 4", planned: 400, actual: 390 },
-    { week: "Week 5", planned: 500, actual: 480 },
-    { week: "Week 6", planned: 600, actual: 580 },
-  ];
+  let timeDistribution = [
+    { name: "Development", value: data.totalDevHours || 1, color: "#0d9488" },
+    { name: "QA Testing", value: data.totalQAHours || 0, color: "#3b82f6" },
+  ].filter((d) => d.value > 0);
+  if (timeDistribution.length === 0) {
+    timeDistribution = [{ name: "No hours yet", value: 1, color: "#94a3b8" }];
+  }
 
-  const timeDistribution = [
-    { name: "Development", value: 2450, color: "#0d9488" },
-    { name: "QA Testing", value: 980, color: "#3b82f6" },
-  ];
-
-  const recentActivity = [
-    { user: "POA Agent", action: "Created new epic 'User Authentication'", time: "2 hours ago", type: "create" },
-    { user: "Sarah Chen", action: "Updated story DEV-123 estimates", time: "3 hours ago", type: "update" },
-    { user: "POA Agent", action: "Generated acceptance criteria for 5 stories", time: "5 hours ago", type: "generate" },
-    { user: "Mike Johnson", action: "Completed task 'Setup CI/CD pipeline'", time: "6 hours ago", type: "complete" },
-    { user: "Emily Davis", action: "Added QA hours to story QA-456", time: "1 day ago", type: "update" },
-    { user: "POA Agent", action: "Created sprint plan for Sprint 12", time: "1 day ago", type: "create" },
-  ];
+  const burnupByWeek = data.burnupData;
+  const recentActivity = data.recentActivity.map((a) => ({
+    user: a.userName,
+    action: a.action,
+    time: formatDistanceToNow(new Date(a.createdAtIso), { addSuffix: true }),
+  }));
 
   return (
     <div className="space-y-6">
       <div>
         <h1>Dashboard</h1>
-        <p className="text-gray-600 mt-1">Overview of your projects and team performance</p>
+        <p className="text-gray-600 mt-1">Overview of {project.name}</p>
       </div>
 
       {/* KPI Cards */}
@@ -73,17 +135,21 @@ export function Dashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={burnupData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="week" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Line type="monotone" dataKey="planned" stroke="#94a3b8" strokeWidth={2} name="Planned" />
-                <Line type="monotone" dataKey="actual" stroke="#0d9488" strokeWidth={2} name="Actual" />
-              </LineChart>
-            </ResponsiveContainer>
+            {burnupByWeek.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={burnupByWeek}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="week" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Line type="monotone" dataKey="planned" stroke="#94a3b8" strokeWidth={2} name="Planned (total tasks)" />
+                  <Line type="monotone" dataKey="actual" stroke="#0d9488" strokeWidth={2} name="Completed" />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[300px] flex items-center justify-center text-gray-500">No task data yet for burnup chart</div>
+            )}
           </CardContent>
         </Card>
 
@@ -92,7 +158,7 @@ export function Dashboard() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Clock className="h-5 w-5 text-teal-600" />
-              Dev vs QA Hours
+              Dev vs QA Hours (estimated)
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -129,22 +195,21 @@ export function Dashboard() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {recentActivity.map((activity, index) => (
-              <div key={index} className="flex items-start gap-3 pb-4 border-b border-gray-100 last:border-0 last:pb-0">
-                <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
-                  activity.type === "create" ? "bg-teal-500" :
-                  activity.type === "update" ? "bg-blue-500" :
-                  activity.type === "generate" ? "bg-purple-500" :
-                  "bg-green-500"
-                }`} />
-                <div className="flex-1 min-w-0">
-                  <p>
-                    <span className="font-medium">{activity.user}</span> {activity.action}
-                  </p>
-                  <p className="text-sm text-gray-500 mt-1">{activity.time}</p>
+            {recentActivity.length > 0 ? (
+              recentActivity.map((activity, index) => (
+                <div key={index} className="flex items-start gap-3 pb-4 border-b border-gray-100 last:border-0 last:pb-0">
+                  <div className="w-2 h-2 rounded-full mt-2 flex-shrink-0 bg-teal-500" />
+                  <div className="flex-1 min-w-0">
+                    <p>
+                      <span className="font-medium">{activity.user}</span> {activity.action}
+                    </p>
+                    <p className="text-sm text-gray-500 mt-1">{activity.time}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="text-gray-500">No recent work log activity.</p>
+            )}
           </div>
         </CardContent>
       </Card>

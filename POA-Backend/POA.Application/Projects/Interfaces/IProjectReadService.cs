@@ -18,6 +18,8 @@ public interface IProjectReadService
 
     Task<IReadOnlyList<ProjectWorklogDto>> GetProjectWorklogsAsync(Guid projectId, CancellationToken cancellationToken = default);
 
+    Task<ProjectDashboardDto?> GetProjectDashboardAsync(Guid projectId, CancellationToken cancellationToken = default);
+
     Task<SrsJobStatusDto?> GetLatestSrsJobByProjectIdAsync(Guid projectId, CancellationToken cancellationToken = default);
 }
 

@@ -217,7 +217,7 @@ public sealed class ProjectReadService(IApplicationDbContext context) : IProject
 
     public async Task<IReadOnlyList<ProjectTaskDto>> GetProjectTasksAsync(Guid projectId, CancellationToken cancellationToken = default)
     {
-        var tasks = await context.Tasks
+        var query = context.Tasks
             .AsNoTracking()
             .Where(task =>
                 (task.Story != null &&
@@ -233,7 +233,13 @@ public sealed class ProjectReadService(IApplicationDbContext context) : IProject
                 Epic = task.Story != null && task.Story.Feature != null ? task.Story.Feature.Epic : null,
                 Sprint = task.Sprint,
                 Assignee = task.Assignee
-            })
+            });
+
+        var ordered = query
+            .OrderByDescending(x => x.Task.UpdatedAt ?? x.Task.CreatedAt)
+            .ThenBy(x => x.Task.Title);
+
+        var tasks = await ordered
             .Select(x => new ProjectTaskDto(
                 x.Task.Id,
                 x.Task.Title,
@@ -257,8 +263,6 @@ public sealed class ProjectReadService(IApplicationDbContext context) : IProject
                 x.Task.TotalCost ?? (x.Task.CostDev ?? 0) + (x.Task.CostTest ?? 0),
                 x.Task.CreatedAt,
                 x.Task.UpdatedAt))
-            .OrderByDescending(task => task.UpdatedAt ?? task.CreatedAt)
-            .ThenBy(task => task.Title)
             .ToListAsync(cancellationToken);
 
         return tasks;
@@ -301,7 +305,7 @@ public sealed class ProjectReadService(IApplicationDbContext context) : IProject
 
     public async Task<IReadOnlyList<ProjectWorklogDto>> GetProjectWorklogsAsync(Guid projectId, CancellationToken cancellationToken = default)
     {
-        var worklogs = await context.Worklogs
+        var query = context.Worklogs
             .AsNoTracking()
             .Where(worklog =>
                 worklog.Task != null &&
@@ -318,7 +322,13 @@ public sealed class ProjectReadService(IApplicationDbContext context) : IProject
                 Worklog = worklog,
                 Task = worklog.Task,
                 User = worklog.User
-            })
+            });
+
+        var ordered = query
+            .OrderByDescending(x => x.Worklog.Date)
+            .ThenByDescending(x => x.Worklog.CreatedAt);
+
+        var worklogs = await ordered
             .Select(x => new ProjectWorklogDto(
                 x.Worklog.Id,
                 x.Worklog.TaskId,
@@ -329,11 +339,110 @@ public sealed class ProjectReadService(IApplicationDbContext context) : IProject
                 x.Worklog.Hours,
                 x.Worklog.Description,
                 x.Worklog.CreatedAt))
-            .OrderByDescending(worklog => worklog.Date)
-            .ThenByDescending(worklog => worklog.CreatedAt)
             .ToListAsync(cancellationToken);
 
         return worklogs;
+    }
+
+    public async Task<ProjectDashboardDto?> GetProjectDashboardAsync(Guid projectId, CancellationToken cancellationToken = default)
+    {
+        var backlog = await GetProjectBacklogAsync(projectId, cancellationToken);
+        if (backlog is null)
+            return null;
+
+        var tasks = await GetProjectTasksAsync(projectId, cancellationToken);
+        var worklogs = await GetProjectWorklogsAsync(projectId, cancellationToken);
+
+        var stories = backlog.Epics
+            .SelectMany(epic => epic.Features)
+            .SelectMany(feature => feature.Stories)
+            .ToList();
+
+        var totalStories = stories.Count;
+        var totalDevHours = stories.Sum(s => s.EstimatedDevHours ?? 0);
+        var totalQAHours = stories.Sum(s => s.EstimatedTestHours ?? 0);
+        var totalCost = stories.Sum(s => s.TotalCost);
+
+        var completedTasks = tasks.Where(t => string.Equals(t.Status, "done", StringComparison.OrdinalIgnoreCase)).ToList();
+        var burnupData = BuildBurnupData(completedTasks, tasks.Count);
+
+        var recentActivity = worklogs
+            .OrderByDescending(w => w.CreatedAt)
+            .Take(8)
+            .Select(w => new DashboardActivityDto(
+                w.UserName ?? "Someone",
+                $"Logged {w.Hours}h{(w.TaskTitle != null ? $" on {w.TaskTitle}" : "")}",
+                w.CreatedAt.ToString("o")))
+            .ToList();
+
+        return new ProjectDashboardDto(
+            totalStories,
+            totalDevHours,
+            totalQAHours,
+            totalCost,
+            burnupData,
+            recentActivity);
+    }
+
+    private static IReadOnlyList<BurnupPointDto> BuildBurnupData(IReadOnlyList<ProjectTaskDto> completedTasks, int totalTasks)
+    {
+        if (totalTasks == 0)
+            return Array.Empty<BurnupPointDto>();
+
+        var taskDates = completedTasks
+            .Select(t => t.UpdatedAt ?? t.CreatedAt)
+            .Where(d => d != default)
+            .Select(d => d.DateTime)
+            .ToList();
+
+        if (taskDates.Count == 0)
+            return new List<BurnupPointDto> { new BurnupPointDto("Current", totalTasks, 0) };
+
+        static DateTime GetWeekStart(DateTime d)
+        {
+            var diff = (7 + (d.DayOfWeek - DayOfWeek.Monday)) % 7;
+            return d.Date.AddDays(-diff);
+        }
+
+        var byWeek = taskDates
+            .GroupBy(GetWeekStart)
+            .ToDictionary(g => g.Key, g => g.Count());
+
+        var weeks = byWeek.Keys.OrderBy(k => k).ToList();
+        var cumulative = 0;
+        var result = new List<BurnupPointDto>();
+        foreach (var weekStart in weeks)
+        {
+            cumulative += byWeek[weekStart];
+            var label = weekStart.ToString("MMM d", System.Globalization.CultureInfo.InvariantCulture);
+            result.Add(new BurnupPointDto(label, totalTasks, cumulative));
+        }
+
+        return result;
+    }
+
+    public async Task<SrsJobStatusDto?> GetLatestSrsJobByProjectIdAsync(Guid projectId, CancellationToken cancellationToken = default)
+    {
+        var job = await context.SrsJobs
+            .AsNoTracking()
+            .Where(j => j.ProjectId == projectId)
+            .OrderByDescending(j => j.CreatedAt)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (job is null)
+            return null;
+
+        return new SrsJobStatusDto
+        {
+            Id = job.Id,
+            ProjectId = job.ProjectId,
+            Status = job.Status.ToString(),
+            StartedAt = job.StartedAt,
+            CompletedAt = job.CompletedAt,
+            ResultSummary = job.ResultSummary,
+            Error = job.Error,
+            CreatedAt = job.CreatedAt
+        };
     }
 
     private static IReadOnlyList<string> SplitAcceptanceCriteria(string? acceptanceCriteria)
@@ -373,28 +482,6 @@ public sealed class ProjectReadService(IApplicationDbContext context) : IProject
             string.Equals(task.Status, "in progress", StringComparison.OrdinalIgnoreCase));
 
         return inProgress > 0 ? "In Progress" : "To Do";
-    }
-
-    public async Task<SrsJobStatusDto?> GetLatestSrsJobByProjectIdAsync(Guid projectId, CancellationToken cancellationToken = default)
-    {
-        var job = await context.SrsJobs
-            .AsNoTracking()
-            .Where(j => j.ProjectId == projectId)
-            .OrderByDescending(j => j.CreatedAt)
-            .FirstOrDefaultAsync(cancellationToken);
-        if (job == null)
-            return null;
-        return new SrsJobStatusDto
-        {
-            Id = job.Id,
-            ProjectId = job.ProjectId,
-            Status = job.Status.ToString(),
-            StartedAt = job.StartedAt,
-            CompletedAt = job.CompletedAt,
-            ResultSummary = job.ResultSummary,
-            Error = job.Error,
-            CreatedAt = job.CreatedAt
-        };
     }
 }
 
