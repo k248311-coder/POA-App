@@ -106,6 +106,28 @@ export interface ProjectWorklog {
   createdAt: string;
 }
 
+/** Dashboard payload from GET /api/projects/:id/dashboard */
+export interface ProjectDashboard {
+  totalStories: number;
+  totalDevHours: number;
+  totalQAHours: number;
+  totalCost: number;
+  burnupData: BurnupPoint[];
+  recentActivity: DashboardActivity[];
+}
+
+export interface BurnupPoint {
+  week: string;
+  planned: number;
+  actual: number;
+}
+
+export interface DashboardActivity {
+  userName: string;
+  action: string;
+  createdAtIso: string;
+}
+
 export interface SignupRequest {
   name: string;
   email: string;

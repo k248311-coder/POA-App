@@ -229,6 +229,41 @@
   },
   {
     "ContainingType": "POA.WebApi.Controllers.ProjectsController",
+    "Method": "GetDashboard",
+    "RelativePath": "api/Projects/{projectId}/dashboard",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "projectId",
+        "Type": "System.Guid",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "POA.Application.Projects.Dtos.ProjectDashboardDto",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      },
+      {
+        "Type": "Microsoft.AspNetCore.Mvc.ProblemDetails",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 404
+      }
+    ]
+  },
+  {
+    "ContainingType": "POA.WebApi.Controllers.ProjectsController",
     "Method": "GetEstimates",
     "RelativePath": "api/Projects/{projectId}/estimates",
     "HttpMethod": "GET",

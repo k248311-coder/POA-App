@@ -72,6 +72,17 @@ public sealed class ProjectsController : ControllerBase
         return Ok(worklogs);
     }
 
+    [HttpGet("{projectId:guid}/dashboard")]
+    [ProducesResponseType(typeof(ProjectDashboardDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetDashboard([FromRoute] Guid projectId, CancellationToken cancellationToken)
+    {
+        var dashboard = await _projectReadService.GetProjectDashboardAsync(projectId, cancellationToken);
+        if (dashboard is null)
+            return NotFound();
+        return Ok(dashboard);
+    }
+
     [HttpPost]
     [ProducesResponseType(typeof(CreateProjectResponseDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(CreateProjectResponseDto), StatusCodes.Status202Accepted)]

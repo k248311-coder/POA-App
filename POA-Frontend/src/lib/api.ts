@@ -4,6 +4,7 @@ import type {
   LoginRequest,
   LoginResponse,
   ProjectBacklog,
+  ProjectDashboard,
   ProjectEstimate,
   ProjectSummary,
   ProjectTask,
@@ -86,6 +87,10 @@ export function getProjectEstimates(projectId: string, signal?: AbortSignal) {
 
 export function getProjectWorklogs(projectId: string, signal?: AbortSignal) {
   return fetchJson<ProjectWorklog[]>(`/api/projects/${projectId}/worklogs`, { signal });
+}
+
+export function getProjectDashboard(projectId: string, signal?: AbortSignal) {
+  return fetchJson<ProjectDashboard>(`/api/projects/${projectId}/dashboard`, { signal });
 }
 
 export function signup(data: SignupRequest, signal?: AbortSignal) {
