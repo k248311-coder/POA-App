@@ -21,3 +21,15 @@ C:\Users\NABI HASAN\Documents\Project\POA-Backend\POA.Domain\obj\Debug\net8.0\PO
 C:\Users\NABI HASAN\Documents\Project\POA-Backend\POA.Domain\obj\Debug\net8.0\refint\POA.Domain.dll
 C:\Users\NABI HASAN\Documents\Project\POA-Backend\POA.Domain\obj\Debug\net8.0\POA.Domain.pdb
 C:\Users\NABI HASAN\Documents\Project\POA-Backend\POA.Domain\obj\Debug\net8.0\ref\POA.Domain.dll
+D:\OneDrive - PERSEUS MANAGEMENT GROUP INC\Desktop\POA-App\POA-Backend\POA.Domain\bin\Debug\net8.0\POA.Domain.deps.json
+D:\OneDrive - PERSEUS MANAGEMENT GROUP INC\Desktop\POA-App\POA-Backend\POA.Domain\bin\Debug\net8.0\POA.Domain.dll
+D:\OneDrive - PERSEUS MANAGEMENT GROUP INC\Desktop\POA-App\POA-Backend\POA.Domain\bin\Debug\net8.0\POA.Domain.pdb
+D:\OneDrive - PERSEUS MANAGEMENT GROUP INC\Desktop\POA-App\POA-Backend\POA.Domain\obj\Debug\net8.0\POA.Domain.GeneratedMSBuildEditorConfig.editorconfig
+D:\OneDrive - PERSEUS MANAGEMENT GROUP INC\Desktop\POA-App\POA-Backend\POA.Domain\obj\Debug\net8.0\POA.Domain.AssemblyInfoInputs.cache
+D:\OneDrive - PERSEUS MANAGEMENT GROUP INC\Desktop\POA-App\POA-Backend\POA.Domain\obj\Debug\net8.0\POA.Domain.AssemblyInfo.cs
+D:\OneDrive - PERSEUS MANAGEMENT GROUP INC\Desktop\POA-App\POA-Backend\POA.Domain\obj\Debug\net8.0\POA.Domain.csproj.CoreCompileInputs.cache
+D:\OneDrive - PERSEUS MANAGEMENT GROUP INC\Desktop\POA-App\POA-Backend\POA.Domain\obj\Debug\net8.0\POA.Domain.sourcelink.json
+D:\OneDrive - PERSEUS MANAGEMENT GROUP INC\Desktop\POA-App\POA-Backend\POA.Domain\obj\Debug\net8.0\POA.Domain.dll
+D:\OneDrive - PERSEUS MANAGEMENT GROUP INC\Desktop\POA-App\POA-Backend\POA.Domain\obj\Debug\net8.0\refint\POA.Domain.dll
+D:\OneDrive - PERSEUS MANAGEMENT GROUP INC\Desktop\POA-App\POA-Backend\POA.Domain\obj\Debug\net8.0\POA.Domain.pdb
+D:\OneDrive - PERSEUS MANAGEMENT GROUP INC\Desktop\POA-App\POA-Backend\POA.Domain\obj\Debug\net8.0\ref\POA.Domain.dll
