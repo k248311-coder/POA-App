@@ -1,2 +1,0 @@
-Line 1: Project initialized
-Line 2: Baseline code added
