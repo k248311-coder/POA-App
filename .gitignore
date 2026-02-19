@@ -14,7 +14,6 @@ POA-Frontend/.env
 /POA-Backend/POA.Domain/bin/
 *.cache
 /POA-Backend/POA.Domain/obj/
-*.txt
 /POA-Frontend/node_modules/
 /POA-Backend/POA.WebApi/obj/
 POA-Backend/POA.Infrastructure/bin/Debug/net8.0/POA.Infrastructure.dll
