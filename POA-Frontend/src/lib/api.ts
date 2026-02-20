@@ -13,6 +13,54 @@ import type {
   SignupResponse,
 } from "../types/api";
 
+// --- Sprint Types ---
+export interface SprintStory {
+  id: string;
+  title: string;
+  description: string | null;
+  epicTitle: string | null;
+  featureTitle: string | null;
+  storyPoints: number | null;
+  estimatedDevHours: number | null;
+  estimatedTestHours: number | null;
+  storyStatus: string;
+  totalCost: number;
+  priority: number;
+}
+
+export interface Sprint {
+  id: string;
+  projectId: string | null;
+  name: string;
+  startDate: string | null;   // "YYYY-MM-DD"
+  endDate: string | null;     // "YYYY-MM-DD"
+  status: string;
+  stories: SprintStory[];
+}
+
+export interface BacklogStory {
+  id: string;
+  title: string;
+  description: string | null;
+  epicTitle: string | null;
+  featureTitle: string | null;
+  storyPoints: number | null;
+  estimatedDevHours: number | null;
+  estimatedTestHours: number | null;
+  status: string;
+  totalCost: number;
+  isInSprint: boolean;
+  currentSprintId: string | null;
+  currentSprintName: string | null;
+}
+
+export interface CreateSprintRequest {
+  name: string;
+  startDate: string | null;   // "YYYY-MM-DD"
+  endDate: string | null;     // "YYYY-MM-DD"
+  storyIds: string[];
+}
+
 const DEFAULT_API_BASE_URLS = [
   "https://localhost:5001",
   "http://localhost:5000",
@@ -43,10 +91,15 @@ async function fetchJson<T>(input: string, init?: RequestInit): Promise<T> {
         throw new Error(message || `Request failed with status ${response.status}`);
       }
 
-      return (await response.json()) as T;
+      if (response.status === 204) {
+        return {} as T;
+      }
+
+      const text = await response.text();
+      return text ? JSON.parse(text) : ({} as T);
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-      
+
       // If it's a network error and we have more URLs to try, continue
       if (
         error instanceof TypeError &&
@@ -55,7 +108,7 @@ async function fetchJson<T>(input: string, init?: RequestInit): Promise<T> {
       ) {
         continue;
       }
-      
+
       // If it's not a network error, or it's the last URL, throw immediately
       if (!(error instanceof TypeError && error.message.includes("fetch"))) {
         throw error;
@@ -124,7 +177,7 @@ export async function createProject(
       const formData = new FormData();
       formData.append("name", data.name);
       formData.append("ownerUserId", data.ownerUserId);
-      
+
       if (data.srsFile) {
         formData.append("srsFile", data.srsFile);
       }
@@ -143,7 +196,7 @@ export async function createProject(
       return (await response.json()) as CreateProjectResponse;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-      
+
       if (
         error instanceof TypeError &&
         error.message.includes("fetch") &&
@@ -151,7 +204,7 @@ export async function createProject(
       ) {
         continue;
       }
-      
+
       if (!(error instanceof TypeError && error.message.includes("fetch"))) {
         throw error;
       }
@@ -163,5 +216,46 @@ export async function createProject(
   );
 }
 
+
 export { API_BASE_URL };
 
+// --- Sprint API ---
+
+export function getSprints(projectId: string, signal?: AbortSignal) {
+  return fetchJson<Sprint[]>(`/api/projects/${projectId}/sprints`, { signal });
+}
+
+export function getBacklogStories(projectId: string, signal?: AbortSignal) {
+  return fetchJson<BacklogStory[]>(`/api/projects/${projectId}/sprints/backlog-stories`, { signal });
+}
+
+export function createSprint(projectId: string, data: CreateSprintRequest, signal?: AbortSignal) {
+  return fetchJson<Sprint>(`/api/projects/${projectId}/sprints`, {
+    method: "POST",
+    body: JSON.stringify(data),
+    signal,
+  });
+}
+
+export function deleteSprint(projectId: string, sprintId: string, signal?: AbortSignal) {
+  return fetchJson<void>(`/api/projects/${projectId}/sprints/${sprintId}`, {
+    method: "DELETE",
+    signal,
+  });
+}
+
+export function updateSprintStories(projectId: string, sprintId: string, storyIds: string[], signal?: AbortSignal) {
+  return fetchJson<void>(`/api/projects/${projectId}/sprints/${sprintId}/stories`, {
+    method: "PUT",
+    body: JSON.stringify({ storyIds }),
+    signal,
+  });
+}
+
+export function reorderSprintStories(projectId: string, sprintId: string, orderedStoryIds: string[], signal?: AbortSignal) {
+  return fetchJson<void>(`/api/projects/${projectId}/sprints/${sprintId}/stories/reorder`, {
+    method: "PUT",
+    body: JSON.stringify({ orderedStoryIds }),
+    signal,
+  });
+}

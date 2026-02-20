@@ -11,6 +11,7 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
     static ApplicationDbContext()
     {
         NpgsqlConnection.GlobalTypeMapper.MapEnum<SrsJobStatus>("llm_prompt_status");
+        NpgsqlConnection.GlobalTypeMapper.MapEnum<SprintStatus>("sprint_status");
     }
     public DbSet<Project> Projects => Set<Project>();
 
@@ -29,6 +30,8 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
     public DbSet<Estimate> Estimates => Set<Estimate>();
 
     public DbSet<Sprint> Sprints => Set<Sprint>();
+    
+    public DbSet<SprintStory> SprintStories => Set<SprintStory>();
 
     public DbSet<LlmPrompt> LlmPrompts => Set<LlmPrompt>();
 
@@ -44,6 +47,7 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
     {
         base.OnModelCreating(modelBuilder);
         modelBuilder.HasPostgresEnum<SrsJobStatus>("llm_prompt_status");
+        modelBuilder.HasPostgresEnum<SprintStatus>("sprint_status");
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
     }
 }

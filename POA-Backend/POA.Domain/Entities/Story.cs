@@ -19,11 +19,15 @@ public sealed class Story : BaseAuditableEntity
     public decimal? EstimatedDevHours { get; set; }
 
     public decimal? EstimatedTestHours { get; set; }
+    
+    public int? Priority { get; set; }
 
     public Feature? Feature { get; set; }
 
     public ICollection<Task> Tasks { get; set; } = new List<Task>();
 
     public ICollection<TestCase> TestCases { get; set; } = new List<TestCase>();
+
+    public ICollection<SprintStory> SprintStories { get; set; } = new List<SprintStory>();
 }
 

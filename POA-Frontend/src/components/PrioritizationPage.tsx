@@ -1,34 +1,72 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "./ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "./ui/alert-dialog";
 import { Checkbox } from "./ui/checkbox";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Calendar as CalendarComponent } from "./ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
-import { GripVertical, ListOrdered, Plus, Minus, Calendar, CheckCircle2, PlusCircle, Lock, CalendarIcon } from "lucide-react";
+import {
+  GripVertical,
+  Plus,
+  Minus,
+  CalendarIcon,
+  Trash2,
+  ChevronDown,
+  ChevronUp,
+  Loader2,
+  RefreshCw,
+  AlertCircle,
+  Layers,
+  Clock,
+  DollarSign,
+  LayoutList,
+  Lock,
+  CheckCircle,
+} from "lucide-react";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { toast } from "sonner@2.0.3";
-import { Alert, AlertDescription } from "./ui/alert";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
+import type {
+  Sprint,
+  SprintStory,
+  BacklogStory,
+  CreateSprintRequest,
+} from "../lib/api";
+import {
+  getSprints,
+  getBacklogStories,
+  createSprint as apiCreateSprint,
+  deleteSprint as apiDeleteSprint,
+  updateSprintStories,
+  reorderSprintStories,
+} from "../lib/api";
 
-interface Story {
-  id: string;
-  title: string;
-  epic: string;
-  feature: string;
-  devHours: number;
-  qaHours: number;
-  cost: number;
-  status: "done" | "in-progress" | "todo";
-  inSprint: boolean;
-}
+// ======================== Types ========================
 
 interface PrioritizationPageProps {
   userRole?: "po" | "team";
+  projectId: string;
 }
 
 interface DragItem {
@@ -37,724 +75,918 @@ interface DragItem {
   type: string;
 }
 
-function DraggableStoryCard({ 
-  story, 
-  index, 
+// ======================== Draggable Story Card ========================
+
+function DraggableStoryCard({
+  story,
+  index,
   moveCard,
-  isReadOnly = false
-}: { 
-  story: Story; 
-  index: number; 
+  isReadOnly = false,
+  onRemove,
+}: {
+  story: SprintStory;
+  index: number;
   moveCard: (dragIndex: number, hoverIndex: number) => void;
   isReadOnly?: boolean;
+  onRemove?: () => void;
 }) {
   const [{ isDragging }, drag] = useDrag({
-    type: "STORY",
-    item: { type: "STORY", id: story.id, index },
-    collect: (monitor) => ({
-      isDragging: monitor.isDragging(),
-    }),
+    type: "SPRINT_STORY",
+    item: { type: "SPRINT_STORY", id: story.id, index },
+    collect: (monitor) => ({ isDragging: monitor.isDragging() }),
     canDrag: !isReadOnly,
   });
 
   const [, drop] = useDrop({
-    accept: "STORY",
+    accept: "SPRINT_STORY",
     hover: (item: DragItem) => {
       if (!isReadOnly && item.index !== index) {
         moveCard(item.index, index);
         item.index = index;
       }
     },
-    canDrop: !isReadOnly,
+    canDrop: () => !isReadOnly,
   });
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "done":
-        return "bg-green-100 text-green-700 border-green-200";
-      case "in-progress":
-        return "bg-blue-100 text-blue-700 border-blue-200";
-      case "todo":
-        return "bg-gray-100 text-gray-700 border-gray-200";
-      default:
-        return "bg-gray-100 text-gray-700 border-gray-200";
-    }
+  const statusColor = (status: string) => {
+    const s = status.toLowerCase();
+    if (s === "done") return "status-done";
+    if (s === "in progress" || s === "in-progress") return "status-in-progress";
+    return "status-todo";
   };
 
   return (
     <div
-      ref={(node) => !isReadOnly ? drag(drop(node)) : null}
-      className={`mb-3 transition-opacity ${isDragging ? "opacity-50" : "opacity-100"}`}
+      ref={(node) => (!isReadOnly ? drag(drop(node)) : null)}
+      style={{ opacity: isDragging ? 0.45 : 1, transition: "opacity 0.2s" }}
+      className="mb-2"
     >
-      <Card className={`${!isReadOnly ? 'cursor-move hover:shadow-md' : ''} transition-shadow border-gray-200`}>
-        <CardContent className="p-4">
-          <div className="flex items-start gap-3">
-            {!isReadOnly && <GripVertical className="h-5 w-5 text-gray-400 mt-1 flex-shrink-0" />}
-            {isReadOnly && <Lock className="h-4 w-4 text-gray-300 mt-1 flex-shrink-0" />}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap mb-2">
-                <span className="text-teal-600">{story.id}</span>
-                <Badge className={getStatusColor(story.status)} variant="outline">
-                  {story.status.toUpperCase().replace("-", " ")}
-                </Badge>
-              </div>
-              <h4 className="mb-2">{story.title}</h4>
-              <div className="space-y-1 text-gray-600">
-                <p>Epic: {story.epic}</p>
-                <p>Feature: {story.feature}</p>
-              </div>
-              <div className="mt-3 flex items-center gap-4 text-gray-600">
-                <span>Dev: {story.devHours}h</span>
-                <span>QA: {story.qaHours}h</span>
-                <span>${story.cost}</span>
-              </div>
-            </div>
+      <div
+        className={`story-drag-card ${!isReadOnly ? "draggable" : ""}`}
+      >
+        <div className="story-drag-priority">#{index + 1}</div>
+        <div className="story-drag-grip">
+          {isReadOnly ? (
+            <Lock className="h-4 w-4 text-gray-400" />
+          ) : (
+            <GripVertical className="h-5 w-5 text-gray-400" />
+          )}
+        </div>
+        <div className="story-drag-body">
+          <div className="story-drag-header">
+            <span className="story-drag-title">{story.title}</span>
+            <Badge className={`story-status-badge ${statusColor(story.storyStatus)}`}>
+              {story.storyStatus}
+            </Badge>
           </div>
-        </CardContent>
-      </Card>
+          <div className="story-drag-meta">
+            {story.epicTitle && <span className="meta-chip epic-chip">{story.epicTitle}</span>}
+            {story.featureTitle && <span className="meta-chip feat-chip">{story.featureTitle}</span>}
+            {story.storyPoints != null && (
+              <span className="meta-chip pts-chip">{story.storyPoints} pts</span>
+            )}
+            {story.estimatedDevHours != null && (
+              <span className="meta-chip hours-chip">Dev: {story.estimatedDevHours}h</span>
+            )}
+            {story.estimatedTestHours != null && (
+              <span className="meta-chip hours-chip">QA: {story.estimatedTestHours}h</span>
+            )}
+            {story.totalCost > 0 && (
+              <span className="meta-chip cost-chip">${story.totalCost.toLocaleString()}</span>
+            )}
+          </div>
+        </div>
+        {!isReadOnly && onRemove && (
+          <button
+            className="story-drag-remove"
+            onClick={onRemove}
+            title="Remove from sprint"
+          >
+            <Minus className="h-4 w-4" />
+          </button>
+        )}
+      </div>
     </div>
   );
 }
 
-export function PrioritizationPage({ userRole = "po" }: PrioritizationPageProps) {
-  const [currentSprint, setCurrentSprint] = useState("Sprint 5 - Q4 2025");
-  const [sprintDuration, setSprintDuration] = useState("2 weeks");
-  const [sprintStartDate, setSprintStartDate] = useState<Date | undefined>(undefined);
-  const [sprintEndDate, setSprintEndDate] = useState<Date | undefined>(undefined);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isCreateSprintOpen, setIsCreateSprintOpen] = useState(false);
-  const [newSprintName, setNewSprintName] = useState("");
-  const [newSprintStartDate, setNewSprintStartDate] = useState<Date | undefined>(undefined);
-  const [newSprintEndDate, setNewSprintEndDate] = useState<Date | undefined>(undefined);
-  const isProductOwner = userRole === "po";
-  const [stories, setStories] = useState<Story[]>([
-    {
-      id: "S1",
-      title: "User can login with email and password",
-      epic: "Login & Registration",
-      feature: "User Authentication",
-      devHours: 16,
-      qaHours: 8,
-      cost: 2400,
-      status: "in-progress",
-      inSprint: true,
-    },
-    {
-      id: "S2",
-      title: "User can sign up with email verification",
-      epic: "Login & Registration",
-      feature: "User Authentication",
-      devHours: 24,
-      qaHours: 12,
-      cost: 3600,
-      status: "todo",
-      inSprint: true,
-    },
-    {
-      id: "S3",
-      title: "User can add items to cart",
-      epic: "Cart Management",
-      feature: "Shopping Cart",
-      devHours: 20,
-      qaHours: 10,
-      cost: 3000,
-      status: "done",
-      inSprint: false,
-    },
-    {
-      id: "S4",
-      title: "User can remove items from cart",
-      epic: "Cart Management",
-      feature: "Shopping Cart",
-      devHours: 12,
-      qaHours: 6,
-      cost: 1800,
-      status: "todo",
-      inSprint: true,
-    },
-    {
-      id: "S5",
-      title: "Admin can view analytics dashboard",
-      epic: "Analytics",
-      feature: "Admin Dashboard",
-      devHours: 32,
-      qaHours: 16,
-      cost: 4800,
-      status: "todo",
-      inSprint: false,
-    },
-    {
-      id: "S6",
-      title: "User can update profile information",
-      epic: "Profile Management",
-      feature: "User Profile",
-      devHours: 18,
-      qaHours: 9,
-      cost: 2700,
-      status: "todo",
-      inSprint: false,
-    },
-    {
-      id: "S7",
-      title: "User can reset password via email",
-      epic: "Login & Registration",
-      feature: "User Authentication",
-      devHours: 14,
-      qaHours: 7,
-      cost: 2100,
-      status: "todo",
-      inSprint: false,
-    },
-    {
-      id: "S8",
-      title: "User can checkout with saved payment method",
-      epic: "Checkout",
-      feature: "Payment Processing",
-      devHours: 28,
-      qaHours: 14,
-      cost: 4200,
-      status: "todo",
-      inSprint: false,
-    },
-  ]);
+// ======================== Sprint Card ========================
 
-  const [selectedBacklogStories, setSelectedBacklogStories] = useState<string[]>([]);
+function SprintCard({
+  sprint,
+  isReadOnly,
+  onDeleteSprint,
+  onManageStories,
+  onMoveCard,
+}: {
+  sprint: Sprint;
+  isReadOnly: boolean;
+  onDeleteSprint: (id: string, name: string) => void;
+  onManageStories: (sprint: Sprint) => void;
+  onMoveCard: (sprintId: string, dragIdx: number, hoverIdx: number) => void;
+}) {
+  const [expanded, setExpanded] = useState(true);
 
-  const sprintStories = stories.filter((s) => s.inSprint);
-  const undoneSprintStories = sprintStories.filter((s) => s.status !== "done");
-  const backlogStories = stories.filter((s) => !s.inSprint && s.status !== "done");
+  const totalDevHours = sprint.stories.reduce((s, st) => s + (st.estimatedDevHours ?? 0), 0);
+  const totalQAHours = sprint.stories.reduce((s, st) => s + (st.estimatedTestHours ?? 0), 0);
+  const totalCost = sprint.stories.reduce((s, st) => s + st.totalCost, 0);
+  const doneCount = sprint.stories.filter((s) => s.storyStatus.toLowerCase() === "done").length;
 
-  const totalDevHours = undoneSprintStories.reduce((sum, s) => sum + s.devHours, 0);
-  const totalQAHours = undoneSprintStories.reduce((sum, s) => sum + s.qaHours, 0);
-  const totalCost = undoneSprintStories.reduce((sum, s) => sum + s.cost, 0);
-
-  const moveCard = (dragIndex: number, hoverIndex: number) => {
-    const draggedStory = undoneSprintStories[dragIndex];
-    const updatedUndoneStories = [...undoneSprintStories];
-    updatedUndoneStories.splice(dragIndex, 1);
-    updatedUndoneStories.splice(hoverIndex, 0, draggedStory);
-
-    // Update the main stories array to reflect the new order
-    const otherStories = stories.filter((s) => !s.inSprint || s.status === "done");
-    setStories([...otherStories, ...updatedUndoneStories]);
-  };
-
-  const toggleBacklogSelection = (storyId: string) => {
-    setSelectedBacklogStories((prev) =>
-      prev.includes(storyId)
-        ? prev.filter((id) => id !== storyId)
-        : [...prev, storyId]
-    );
-  };
-
-  const addToSprint = () => {
-    setStories((prev) =>
-      prev.map((story) =>
-        selectedBacklogStories.includes(story.id)
-          ? { ...story, inSprint: true }
-          : story
-      )
-    );
-    setSelectedBacklogStories([]);
-  };
-
-  const removeFromSprint = (storyId: string) => {
-    setStories((prev) =>
-      prev.map((story) =>
-        story.id === storyId ? { ...story, inSprint: false } : story
-      )
-    );
-  };
-
-  const selectAllBacklog = () => {
-    setSelectedBacklogStories(backlogStories.map((s) => s.id));
-  };
-
-  const deselectAllBacklog = () => {
-    setSelectedBacklogStories([]);
-  };
-
-  const calculateDuration = (start: Date, end: Date): string => {
-    const diffTime = Math.abs(end.getTime() - start.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    const weeks = Math.floor(diffDays / 7);
-    const days = diffDays % 7;
-    
-    if (weeks === 0) {
-      return `${diffDays} day${diffDays !== 1 ? 's' : ''}`;
-    } else if (days === 0) {
-      return `${weeks} week${weeks !== 1 ? 's' : ''}`;
-    } else {
-      return `${weeks} week${weeks !== 1 ? 's' : ''} ${days} day${days !== 1 ? 's' : ''}`;
-    }
-  };
-
-  const handleCloseSprint = () => {
-    // Mark all undone stories in sprint as done or move them
-    toast.success(`${currentSprint} has been closed successfully!`);
-  };
-
-  const handleCreateSprint = () => {
-    if (!newSprintName.trim()) {
-      toast.error("Please enter sprint name");
-      return;
-    }
-    if (!newSprintStartDate || !newSprintEndDate) {
-      toast.error("Please select start and end dates");
-      return;
-    }
-    if (newSprintEndDate <= newSprintStartDate) {
-      toast.error("End date must be after start date");
-      return;
-    }
-    
-    const duration = calculateDuration(newSprintStartDate, newSprintEndDate);
-    setCurrentSprint(newSprintName);
-    setSprintDuration(duration);
-    setSprintStartDate(newSprintStartDate);
-    setSprintEndDate(newSprintEndDate);
-    setNewSprintName("");
-    setNewSprintStartDate(undefined);
-    setNewSprintEndDate(undefined);
-    setIsCreateSprintOpen(false);
-    toast.success(`${newSprintName} created successfully!`);
+  const sprintStatusColor = (status: string) => {
+    if (status === "active") return "sprint-badge-active";
+    if (status === "completed") return "sprint-badge-done";
+    return "sprint-badge-planned";
   };
 
   return (
+    <div className="sprint-card">
+      {/* Sprint Header */}
+      <div className="sprint-card-header">
+        <div className="sprint-header-left">
+          <div className="sprint-header-icon">
+            <Layers className="h-5 w-5" />
+          </div>
+          <div>
+            <div className="sprint-header-title">
+              <span>{sprint.name}</span>
+              <span className={`sprint-status-badge ${sprintStatusColor(sprint.status)}`}>
+                {sprint.status}
+              </span>
+            </div>
+            <div className="sprint-header-sub">
+              {sprint.startDate && sprint.endDate && (
+                <span className="sprint-date-range">
+                  <CalendarIcon className="h-3.5 w-3.5 inline mr-1" />
+                  {format(parseISO(sprint.startDate), "MMM d")} — {format(parseISO(sprint.endDate), "MMM d, yyyy")}
+                </span>
+              )}
+              <span className="sprint-story-count">
+                {sprint.stories.length} {sprint.stories.length === 1 ? "story" : "stories"}
+                {sprint.stories.length > 0 && ` • ${doneCount}/${sprint.stories.length} done`}
+              </span>
+            </div>
+          </div>
+        </div>
+        <div className="sprint-header-right">
+          {/* Stats */}
+          <div className="sprint-stats">
+            <div className="sprint-stat">
+              <Clock className="h-3.5 w-3.5" />
+              <span>{totalDevHours.toFixed(0)}h dev</span>
+            </div>
+            <div className="sprint-stat">
+              <Clock className="h-3.5 w-3.5" />
+              <span>{totalQAHours.toFixed(0)}h QA</span>
+            </div>
+            <div className="sprint-stat">
+              <DollarSign className="h-3.5 w-3.5" />
+              <span>${totalCost.toLocaleString()}</span>
+            </div>
+          </div>
+          {/* Actions */}
+          {!isReadOnly && (
+            <div className="sprint-actions">
+              <Button
+                size="sm"
+                variant="outline"
+                className="sprint-manage-btn"
+                onClick={() => onManageStories(sprint)}
+              >
+                <LayoutList className="h-3.5 w-3.5 mr-1" />
+                Manage
+              </Button>
+              <button
+                className="sprint-delete-btn"
+                onClick={() => onDeleteSprint(sprint.id, sprint.name)}
+                title="Delete sprint"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+          <button
+            className="sprint-collapse-btn"
+            onClick={() => setExpanded((e) => !e)}
+          >
+            {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </button>
+        </div>
+      </div>
+
+      {/* Stories */}
+      {expanded && (
+        <div className="sprint-stories-section">
+          {sprint.stories.length === 0 ? (
+            <div className="sprint-empty">
+              <LayoutList className="h-10 w-10 opacity-25 mx-auto mb-2" />
+              <p>No stories in this sprint yet.</p>
+              {!isReadOnly && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="sprint-manage-btn mt-3"
+                  onClick={() => onManageStories(sprint)}
+                >
+                  <Plus className="h-3.5 w-3.5 mr-1" />
+                  Add Stories
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className="sprint-stories-list">
+              {sprint.stories.map((story, idx) => (
+                <DraggableStoryCard
+                  key={story.id}
+                  story={story}
+                  index={idx}
+                  moveCard={(di, hi) => onMoveCard(sprint.id, di, hi)}
+                  isReadOnly={isReadOnly}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ======================== Main Page ========================
+
+export function PrioritizationPage({ userRole = "po", projectId }: PrioritizationPageProps) {
+  const isProductOwner = userRole === "po";
+
+  // ---- State ----
+  const [sprints, setSprints] = useState<Sprint[]>([]);
+  const [backlogStories, setBacklogStories] = useState<BacklogStory[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Create sprint dialog
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [newSprintName, setNewSprintName] = useState("");
+  const [newStartDate, setNewStartDate] = useState<Date | undefined>(undefined);
+  const [newEndDate, setNewEndDate] = useState<Date | undefined>(undefined);
+  const [selectedStoryIds, setSelectedStoryIds] = useState<string[]>([]);
+  const [creating, setCreating] = useState(false);
+
+  // Manage stories dialog
+  const [manageDialogOpen, setManageDialogOpen] = useState(false);
+  const [managingSprint, setManagingSprint] = useState<Sprint | null>(null);
+  const [manageSelectedIds, setManageSelectedIds] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
+
+  // Delete dialog
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deletingSprintId, setDeletingSprintId] = useState<string | null>(null);
+  const [deletingSprintName, setDeletingSprintName] = useState("");
+
+  // Debounce timer for reorder saves
+  const reorderTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ---- Data loading ----
+  const loadData = useCallback(async () => {
+    if (!projectId) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const [sprintsData, storiesData] = await Promise.all([
+        getSprints(projectId),
+        getBacklogStories(projectId),
+      ]);
+      setSprints(sprintsData);
+      setBacklogStories(storiesData);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Failed to load sprint data";
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  }, [projectId]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  // ---- Create Sprint ----
+  const handleCreateSprint = async () => {
+    if (!newSprintName.trim()) {
+      toast.error("Please enter a sprint name.");
+      return;
+    }
+    setCreating(true);
+    try {
+      const payload: CreateSprintRequest = {
+        name: newSprintName.trim(),
+        startDate: newStartDate ? format(newStartDate, "yyyy-MM-dd") : null,
+        endDate: newEndDate ? format(newEndDate, "yyyy-MM-dd") : null,
+        storyIds: selectedStoryIds,
+      };
+      const newSprint = await apiCreateSprint(projectId, payload);
+      setSprints((prev) => [...prev, newSprint]);
+      // Refresh backlog stories to update sprint membership
+      const updatedStories = await getBacklogStories(projectId);
+      setBacklogStories(updatedStories);
+      toast.success(`Sprint "${newSprintName}" created!`);
+      resetCreateDialog();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to create sprint");
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const resetCreateDialog = () => {
+    setCreateDialogOpen(false);
+    setNewSprintName("");
+    setNewStartDate(undefined);
+    setNewEndDate(undefined);
+    setSelectedStoryIds([]);
+  };
+
+  // ---- Delete Sprint ----
+  const handleDeleteSprint = async () => {
+    if (!deletingSprintId) return;
+    try {
+      await apiDeleteSprint(projectId, deletingSprintId);
+      setSprints((prev) => prev.filter((s) => s.id !== deletingSprintId));
+      const updatedStories = await getBacklogStories(projectId);
+      setBacklogStories(updatedStories);
+      toast.success(`Sprint "${deletingSprintName}" deleted.`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to delete sprint");
+    } finally {
+      setDeleteDialogOpen(false);
+      setDeletingSprintId(null);
+      setDeletingSprintName("");
+    }
+  };
+
+  // ---- Manage Stories Dialog ----
+  const openManageDialog = (sprint: Sprint) => {
+    setManagingSprint(sprint);
+    setManageSelectedIds(sprint.stories.map((s) => s.id));
+    setManageDialogOpen(true);
+  };
+
+  const handleSaveSprintStories = async () => {
+    if (!managingSprint) return;
+    setSaving(true);
+    try {
+      await updateSprintStories(projectId, managingSprint.id, manageSelectedIds);
+      // Reload both sprints and backlog
+      const [sprintsData, storiesData] = await Promise.all([
+        getSprints(projectId),
+        getBacklogStories(projectId),
+      ]);
+      setSprints(sprintsData);
+      setBacklogStories(storiesData);
+      toast.success("Sprint stories updated!");
+      setManageDialogOpen(false);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to update sprint stories");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const toggleManageStory = (storyId: string) => {
+    setManageSelectedIds((prev) =>
+      prev.includes(storyId) ? prev.filter((id) => id !== storyId) : [...prev, storyId]
+    );
+  };
+
+  // ---- Drag & Drop Reorder ----
+  const handleMoveCard = useCallback(
+    (sprintId: string, dragIndex: number, hoverIndex: number) => {
+      let finalOrderedIds: string[] = [];
+
+      setSprints((prev) => {
+        const newSprints = prev.map((sprint) => {
+          if (sprint.id !== sprintId) return sprint;
+          const stories = [...sprint.stories];
+          const [dragged] = stories.splice(dragIndex, 1);
+          stories.splice(hoverIndex, 0, dragged);
+          const reordered = stories.map((s, i) => ({ ...s, priority: i + 1 }));
+          finalOrderedIds = reordered.map(s => s.id);
+          return { ...sprint, stories: reordered };
+        });
+        return newSprints;
+      });
+
+      // Save to backend with debounce
+      if (reorderTimer.current) clearTimeout(reorderTimer.current);
+      reorderTimer.current = setTimeout(async () => {
+        if (finalOrderedIds.length > 0) {
+          try {
+            await reorderSprintStories(projectId, sprintId, finalOrderedIds);
+          } catch (e) {
+            toast.error("Failed to persist new story order");
+          }
+        }
+      }, 1200);
+    },
+    [projectId]
+  );
+
+  // ---- Remove story from sprint inline ----
+  const handleRemoveFromSprint = async (sprintId: string, storyId: string) => {
+    const sprint = sprints.find((s) => s.id === sprintId);
+    if (!sprint) return;
+    const newIds = sprint.stories.filter((s) => s.id !== storyId).map((s) => s.id);
+    try {
+      await updateSprintStories(projectId, sprintId, newIds);
+      setSprints((prev) =>
+        prev.map((s) =>
+          s.id === sprintId
+            ? { ...s, stories: s.stories.filter((st) => st.id !== storyId) }
+            : s
+        )
+      );
+      const updatedStories = await getBacklogStories(projectId);
+      setBacklogStories(updatedStories);
+      toast.success("Story removed from sprint.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to remove story");
+    }
+  };
+
+  // ---- Helpers ----
+  const calculateDuration = (start: Date, end: Date) => {
+    const diffDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+    const weeks = Math.floor(diffDays / 7);
+    const days = diffDays % 7;
+    if (weeks === 0) return `${diffDays} day${diffDays !== 1 ? "s" : ""}`;
+    if (days === 0) return `${weeks} week${weeks !== 1 ? "s" : ""}`;
+    return `${weeks}w ${days}d`;
+  };
+
+  const freeBacklogStories = backlogStories.filter((s) => !s.isInSprint);
+  const totalProjectDevHours = sprints.flatMap((s) => s.stories).reduce((acc, s) => acc + (s.estimatedDevHours ?? 0), 0);
+  const totalProjectQAHours = sprints.flatMap((s) => s.stories).reduce((acc, s) => acc + (s.estimatedTestHours ?? 0), 0);
+  const totalProjectCost = sprints.flatMap((s) => s.stories).reduce((acc, s) => acc + s.totalCost, 0);
+
+  // All stories available to add in "Create Sprint" dialog = those not already in any sprint
+  const availableToAdd = backlogStories.filter((s) => !s.isInSprint);
+
+  // ======================== Render ========================
+
+  if (loading) {
+    return (
+      <div className="prioritization-loading">
+        <Loader2 className="h-10 w-10 animate-spin text-teal-500" />
+        <p>Loading sprint data…</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="prioritization-error">
+        <AlertCircle className="h-10 w-10 text-red-400 mb-3" />
+        <p className="text-red-700 mb-4">{error}</p>
+        <Button onClick={loadData} variant="outline" className="gap-2">
+          <RefreshCw className="h-4 w-4" />
+          Retry
+        </Button>
+      </div>
+    );
+  }
+
+  return (
     <DndProvider backend={HTML5Backend}>
-      <div className="space-y-6">
-        <div>
-          <h1>Sprint Prioritization</h1>
-          <p className="text-gray-600 mt-1">
-            {isProductOwner 
-              ? "Manage and prioritize your sprint backlog with drag-and-drop"
-              : "View current sprint backlog and priorities"}
-          </p>
+      <div className="prioritization-root">
+        {/* ---- Page Header ---- */}
+        <div className="prioritization-page-header">
+          <div>
+            <h1 className="prioritization-title">Sprint Prioritization</h1>
+            <p className="prioritization-sub">
+              {isProductOwner
+                ? "Create and manage sprints. Drag stories to reprioritize within a sprint."
+                : "View sprint backlog and priorities."}
+            </p>
+          </div>
+          <div className="prioritization-header-actions">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={loadData}
+              className="gap-2 refresh-btn"
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+              Refresh
+            </Button>
+            {isProductOwner && (
+              <Button
+                onClick={() => setCreateDialogOpen(true)}
+                className="create-sprint-btn"
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Create Sprint
+              </Button>
+            )}
+          </div>
         </div>
 
-        {/* Role-based Alert */}
+        {/* ---- Read-only Banner ---- */}
         {!isProductOwner && (
-          <Alert className="border-blue-200 bg-blue-50">
-            <Lock className="h-4 w-4 text-blue-600" />
-            <AlertDescription className="text-blue-900">
-              You are viewing the sprint in read-only mode. Only Product Owners can manage and prioritize the sprint backlog.
-            </AlertDescription>
-          </Alert>
+          <div className="readonly-banner">
+            <Lock className="h-4 w-4" />
+            <span>View-only mode. Only Product Owners can manage sprints.</span>
+          </div>
         )}
 
-        {/* Sprint Header */}
-        <Card className="border-teal-200 bg-teal-50">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between flex-wrap gap-4">
-              <div className="flex items-center gap-3">
-                <Calendar className="w-6 h-6 text-teal-600" />
-                <div>
-                  <h2 className="text-teal-900">{currentSprint}</h2>
-                  <p className="text-teal-700 mt-1">
-                    {undoneSprintStories.length} stories in sprint backlog • Duration: {sprintDuration}
-                    {sprintStartDate && sprintEndDate && (
-                      <> • {format(sprintStartDate, "MMM dd")} - {format(sprintEndDate, "MMM dd, yyyy")}</>
-                    )}
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                {isProductOwner && (
-                  <>
-                    <Button
-                      onClick={() => setIsDialogOpen(true)}
-                      className="bg-teal-600 hover:bg-teal-700"
-                    >
-                      <ListOrdered className="w-4 h-4 mr-2" />
-                      Prioritize Sprint Backlog
-                    </Button>
-                    <Button
-                      onClick={handleCloseSprint}
-                      variant="outline"
-                      className="border-green-600 text-green-600 hover:bg-green-50"
-                    >
-                      <CheckCircle2 className="w-4 h-4 mr-2" />
-                      Close Sprint
-                    </Button>
-                    <Button
-                      onClick={() => setIsCreateSprintOpen(true)}
-                      variant="outline"
-                      className="border-teal-600 text-teal-600 hover:bg-teal-50"
-                    >
-                      <PlusCircle className="w-4 h-4 mr-2" />
-                      Create Sprint
-                    </Button>
-                  </>
-                )}
-              </div>
+        {/* ---- Overview Stats ---- */}
+        <div className="overview-stats-grid">
+          <div className="overview-stat-card">
+            <div className="overview-stat-icon sprints-icon">
+              <Layers className="h-5 w-5" />
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Card className="border-gray-200">
-            <CardContent className="p-6">
-              <p className="text-gray-600">Total Dev Hours</p>
-              <h2 className="mt-2 text-teal-600">{totalDevHours}h</h2>
-            </CardContent>
-          </Card>
-          <Card className="border-gray-200">
-            <CardContent className="p-6">
-              <p className="text-gray-600">Total QA Hours</p>
-              <h2 className="mt-2 text-blue-600">{totalQAHours}h</h2>
-            </CardContent>
-          </Card>
-          <Card className="border-gray-200">
-            <CardContent className="p-6">
-              <p className="text-gray-600">Total Cost</p>
-              <h2 className="mt-2 text-gray-900">${totalCost.toLocaleString()}</h2>
-            </CardContent>
-          </Card>
+            <div>
+              <span className="overview-stat-value">{sprints.length}</span>
+              <span className="overview-stat-label">Sprints</span>
+            </div>
+          </div>
+          <div className="overview-stat-card">
+            <div className="overview-stat-icon stories-icon">
+              <LayoutList className="h-5 w-5" />
+            </div>
+            <div>
+              <span className="overview-stat-value">
+                {sprints.reduce((a, s) => a + s.stories.length, 0)}
+              </span>
+              <span className="overview-stat-label">Stories in Sprints</span>
+            </div>
+          </div>
+          <div className="overview-stat-card">
+            <div className="overview-stat-icon hours-icon">
+              <Clock className="h-5 w-5" />
+            </div>
+            <div>
+              <span className="overview-stat-value">{totalProjectDevHours.toFixed(0)}h</span>
+              <span className="overview-stat-label">Dev Hours</span>
+            </div>
+          </div>
+          <div className="overview-stat-card">
+            <div className="overview-stat-icon qa-icon">
+              <Clock className="h-5 w-5" />
+            </div>
+            <div>
+              <span className="overview-stat-value">{totalProjectQAHours.toFixed(0)}h</span>
+              <span className="overview-stat-label">QA Hours</span>
+            </div>
+          </div>
+          <div className="overview-stat-card">
+            <div className="overview-stat-icon cost-icon">
+              <DollarSign className="h-5 w-5" />
+            </div>
+            <div>
+              <span className="overview-stat-value">${totalProjectCost.toLocaleString()}</span>
+              <span className="overview-stat-label">Total Cost</span>
+            </div>
+          </div>
+          <div className="overview-stat-card">
+            <div className="overview-stat-icon backlog-icon">
+              <CheckCircle className="h-5 w-5" />
+            </div>
+            <div>
+              <span className="overview-stat-value">{freeBacklogStories.length}</span>
+              <span className="overview-stat-label">Unassigned Stories</span>
+            </div>
+          </div>
         </div>
 
-        {/* Sprint Backlog with Drag & Drop */}
-        <Card className="border-gray-200">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-gray-900">
-              {isProductOwner ? <GripVertical className="h-5 w-5" /> : <ListOrdered className="h-5 w-5" />}
-              Sprint Backlog {isProductOwner && "- Drag to Reorder"}
-            </CardTitle>
-            <p className="text-gray-600 mt-1">
-              {isProductOwner 
-                ? "Drag stories to change their priority order"
-                : "Stories ordered by priority"}
+        {/* ---- Sprint List ---- */}
+        {sprints.length === 0 ? (
+          <div className="no-sprints-placeholder">
+            <Layers className="h-14 w-14 opacity-20 mb-4" />
+            <h3>No sprints yet</h3>
+            <p>
+              {isProductOwner
+                ? "Create your first sprint to start planning work."
+                : "The Product Owner hasn't created any sprints yet."}
             </p>
-          </CardHeader>
-          <CardContent>
-            {undoneSprintStories.length === 0 ? (
-              <div className="text-center py-12">
-                <ListOrdered className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-gray-900 mb-2">No stories in sprint backlog</h3>
-                <p className="text-gray-500 mb-4">
-                  {isProductOwner 
-                    ? 'Click "Prioritize Sprint Backlog" to add stories'
-                    : "The Product Owner hasn't added any stories to this sprint yet"}
-                </p>
-                {isProductOwner && (
-                  <Button
-                    onClick={() => setIsDialogOpen(true)}
-                    className="bg-teal-600 hover:bg-teal-700"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Stories
-                  </Button>
-                )}
-              </div>
-            ) : (
-              <div>
-                {undoneSprintStories.map((story, index) => (
-                  <div key={story.id} className="relative">
-                    <div className="absolute -left-8 top-6 text-gray-400">
-                      #{index + 1}
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <div className="flex-1">
-                        <DraggableStoryCard
-                          story={story}
-                          index={index}
-                          moveCard={moveCard}
-                          isReadOnly={!isProductOwner}
-                        />
+            {isProductOwner && (
+              <Button onClick={() => setCreateDialogOpen(true)} className="create-sprint-btn mt-4">
+                <Plus className="h-4 w-4 mr-1" />
+                Create First Sprint
+              </Button>
+            )}
+          </div>
+        ) : (
+          <div className="sprint-list">
+            {sprints.map((sprint) => (
+              <SprintCard
+                key={sprint.id}
+                sprint={sprint}
+                isReadOnly={!isProductOwner}
+                onDeleteSprint={(id, name) => {
+                  setDeletingSprintId(id);
+                  setDeletingSprintName(name);
+                  setDeleteDialogOpen(true);
+                }}
+                onManageStories={openManageDialog}
+                onMoveCard={handleMoveCard}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* ---- Unassigned Backlog Panel ---- */}
+        {freeBacklogStories.length > 0 && (
+          <Card className="backlog-panel">
+            <CardHeader className="backlog-panel-header">
+              <CardTitle className="backlog-panel-title">
+                <LayoutList className="h-5 w-5" />
+                Unassigned Backlog
+                <span className="backlog-count">{freeBacklogStories.length}</span>
+              </CardTitle>
+              <p className="backlog-panel-sub">
+                Stories not yet assigned to any sprint
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="backlog-story-list">
+                {freeBacklogStories.map((story) => (
+                  <div key={story.id} className="backlog-story-item">
+                    <div className="backlog-story-info">
+                      <span className="backlog-story-title">{story.title}</span>
+                      <div className="backlog-story-meta">
+                        {story.epicTitle && <span className="meta-chip epic-chip">{story.epicTitle}</span>}
+                        {story.featureTitle && <span className="meta-chip feat-chip">{story.featureTitle}</span>}
+                        {story.storyPoints != null && <span className="meta-chip pts-chip">{story.storyPoints} pts</span>}
+                        {story.estimatedDevHours != null && <span className="meta-chip hours-chip">Dev: {story.estimatedDevHours}h</span>}
+                        {story.estimatedTestHours != null && <span className="meta-chip hours-chip">QA: {story.estimatedTestHours}h</span>}
                       </div>
-                      {isProductOwner && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeFromSprint(story.id)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50 mt-3"
-                        >
-                          <Minus className="w-4 h-4" />
-                        </Button>
-                      )}
                     </div>
+                    <Badge className={`story-status-badge ${story.status.toLowerCase().includes("done") ? "status-done" : story.status.toLowerCase().includes("progress") ? "status-in-progress" : "status-todo"}`}>
+                      {story.status}
+                    </Badge>
                   </div>
                 ))}
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
-        {/* Dialog for Creating New Sprint */}
-        <Dialog open={isCreateSprintOpen} onOpenChange={setIsCreateSprintOpen}>
-          <DialogContent className="max-w-md">
+        {/* ======================== CREATE SPRINT DIALOG ======================== */}
+        <Dialog open={createDialogOpen} onOpenChange={(o) => { if (!o) resetCreateDialog(); else setCreateDialogOpen(true); }}>
+          <DialogContent className="create-sprint-dialog">
             <DialogHeader>
-              <DialogTitle className="text-gray-900">Create New Sprint</DialogTitle>
+              <DialogTitle>Create New Sprint</DialogTitle>
               <DialogDescription>
-                Enter the sprint name and select start and end dates
+                Set sprint details and optionally add stories from the backlog.
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="sprintName" className="text-gray-700">
-                  Sprint Name
-                </Label>
+
+            <div className="create-sprint-form">
+              {/* Sprint Name */}
+              <div className="form-field">
+                <Label htmlFor="sprint-name">Sprint Name *</Label>
                 <Input
-                  id="sprintName"
-                  placeholder="e.g., Sprint 6 - Q1 2026"
+                  id="sprint-name"
+                  placeholder="e.g., Sprint 1 – Q1 2026"
                   value={newSprintName}
                   onChange={(e) => setNewSprintName(e.target.value)}
-                  className="bg-white border-gray-200"
+                  onKeyDown={(e) => { if (e.key === "Enter") handleCreateSprint(); }}
                 />
               </div>
-              <div className="space-y-2">
-                <Label className="text-gray-700">Start Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={`w-full justify-start text-left font-normal ${
-                        !newSprintStartDate && "text-gray-500"
-                      }`}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {newSprintStartDate ? (
-                        format(newSprintStartDate, "PPP")
-                      ) : (
-                        <span>Pick a start date</span>
-                      )}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <CalendarComponent
-                      mode="single"
-                      selected={newSprintStartDate}
-                      onSelect={setNewSprintStartDate}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
+
+              {/* Dates */}
+              <div className="form-dates-row">
+                <div className="form-field">
+                  <Label>Start Date</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className={`date-picker-btn ${!newStartDate ? "text-gray-400" : ""}`}>
+                        <CalendarIcon className="h-4 w-4 mr-2" />
+                        {newStartDate ? format(newStartDate, "MMM d, yyyy") : "Pick start date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <CalendarComponent
+                        mode="single"
+                        selected={newStartDate}
+                        onSelect={setNewStartDate}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <div className="form-field">
+                  <Label>End Date</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className={`date-picker-btn ${!newEndDate ? "text-gray-400" : ""}`}>
+                        <CalendarIcon className="h-4 w-4 mr-2" />
+                        {newEndDate ? format(newEndDate, "MMM d, yyyy") : "Pick end date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <CalendarComponent
+                        mode="single"
+                        selected={newEndDate}
+                        onSelect={setNewEndDate}
+                        disabled={(d) => newStartDate ? d <= newStartDate : false}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label className="text-gray-700">End Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={`w-full justify-start text-left font-normal ${
-                        !newSprintEndDate && "text-gray-500"
-                      }`}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {newSprintEndDate ? (
-                        format(newSprintEndDate, "PPP")
-                      ) : (
-                        <span>Pick an end date</span>
-                      )}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <CalendarComponent
-                      mode="single"
-                      selected={newSprintEndDate}
-                      onSelect={setNewSprintEndDate}
-                      initialFocus
-                      disabled={(date) =>
-                        newSprintStartDate ? date <= newSprintStartDate : false
-                      }
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-              {newSprintStartDate && newSprintEndDate && newSprintEndDate > newSprintStartDate && (
-                <div className="p-3 bg-teal-50 border border-teal-200 rounded-lg">
-                  <p className="text-teal-900">
-                    Duration: {calculateDuration(newSprintStartDate, newSprintEndDate)}
-                  </p>
+
+              {/* Duration badge */}
+              {newStartDate && newEndDate && newEndDate > newStartDate && (
+                <div className="duration-badge">
+                  Duration: {calculateDuration(newStartDate, newEndDate)}
                 </div>
               )}
+
+              {/* Story selection */}
+              <div className="form-field">
+                <Label>Add Stories from Backlog</Label>
+                {availableToAdd.length === 0 ? (
+                  <p className="no-stories-hint">No unassigned stories available.</p>
+                ) : (
+                  <div className="story-select-list">
+                    <div className="story-select-actions">
+                      <button className="select-all-btn" onClick={() => setSelectedStoryIds(availableToAdd.map((s) => s.id))}>
+                        Select All
+                      </button>
+                      <button className="clear-btn" onClick={() => setSelectedStoryIds([])}>
+                        Clear
+                      </button>
+                      <span className="select-count">{selectedStoryIds.length} selected</span>
+                    </div>
+                    {availableToAdd.map((story) => (
+                      <label
+                        key={story.id}
+                        className={`story-select-item ${selectedStoryIds.includes(story.id) ? "selected" : ""}`}
+                      >
+                        <Checkbox
+                          checked={selectedStoryIds.includes(story.id)}
+                          onCheckedChange={() =>
+                            setSelectedStoryIds((prev) =>
+                              prev.includes(story.id)
+                                ? prev.filter((id) => id !== story.id)
+                                : [...prev, story.id]
+                            )
+                          }
+                        />
+                        <div className="story-select-info">
+                          <span className="story-select-title">{story.title}</span>
+                          <div className="story-select-meta">
+                            {story.epicTitle && <span className="meta-chip epic-chip">{story.epicTitle}</span>}
+                            {story.featureTitle && <span className="meta-chip feat-chip">{story.featureTitle}</span>}
+                            {story.storyPoints != null && <span className="meta-chip pts-chip">{story.storyPoints} pts</span>}
+                            {story.estimatedDevHours != null && <span className="meta-chip hours-chip">{story.estimatedDevHours}h dev</span>}
+                          </div>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setIsCreateSprintOpen(false);
-                  setNewSprintName("");
-                  setNewSprintStartDate(undefined);
-                  setNewSprintEndDate(undefined);
-                }}
-                className="border-gray-300 text-gray-700 hover:bg-gray-50"
-              >
+
+            <DialogFooter className="create-sprint-footer">
+              <Button variant="outline" onClick={resetCreateDialog} disabled={creating}>
                 Cancel
               </Button>
-              <Button
-                onClick={handleCreateSprint}
-                className="bg-teal-600 hover:bg-teal-700"
-                disabled={!newSprintName.trim() || !newSprintStartDate || !newSprintEndDate}
-              >
-                Confirm
+              <Button onClick={handleCreateSprint} disabled={!newSprintName.trim() || creating} className="create-sprint-confirm-btn">
+                {creating ? (
+                  <><Loader2 className="h-4 w-4 animate-spin mr-2" />Creating…</>
+                ) : (
+                  <><Plus className="h-4 w-4 mr-1" />Create Sprint</>
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
 
-        {/* Dialog for Managing Sprint Backlog */}
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+        {/* ======================== MANAGE STORIES DIALOG ======================== */}
+        <Dialog open={manageDialogOpen} onOpenChange={(o) => { if (!o) setManageDialogOpen(false); }}>
+          <DialogContent className="manage-stories-dialog">
             <DialogHeader>
-              <DialogTitle className="text-gray-900">Manage Sprint Backlog</DialogTitle>
+              <DialogTitle>Manage Stories – {managingSprint?.name}</DialogTitle>
               <DialogDescription>
-                Select undone stories from the product backlog to add to {currentSprint}
+                Select stories to include in this sprint. Deselect to remove them.
               </DialogDescription>
             </DialogHeader>
 
-            <div className="space-y-4">
-              {/* Action Buttons */}
-              <div className="flex items-center justify-between">
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={selectAllBacklog}
-                    className="border-teal-600 text-teal-600 hover:bg-teal-50"
-                  >
-                    Select All
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={deselectAllBacklog}
-                    className="border-gray-300 text-gray-700 hover:bg-gray-50"
-                  >
-                    Deselect All
-                  </Button>
+            <div className="manage-stories-body">
+              {/* Sprint's current stories */}
+              <div className="manage-section">
+                <h4 className="manage-section-title">In Sprint ({manageSelectedIds.length})</h4>
+                <div className="manage-story-list">
+                  {backlogStories.filter((s) => manageSelectedIds.includes(s.id)).length === 0 ? (
+                    <p className="no-stories-hint">No stories selected yet.</p>
+                  ) : (
+                    backlogStories
+                      .filter((s) => manageSelectedIds.includes(s.id))
+                      .map((story) => (
+                        <div key={story.id} className="manage-story-item in-sprint">
+                          <Checkbox checked onCheckedChange={() => toggleManageStory(story.id)} />
+                          <div className="manage-story-info">
+                            <span>{story.title}</span>
+                            <div className="story-select-meta">
+                              {story.epicTitle && <span className="meta-chip epic-chip">{story.epicTitle}</span>}
+                              {story.storyPoints != null && <span className="meta-chip pts-chip">{story.storyPoints} pts</span>}
+                            </div>
+                          </div>
+                          <button className="inline-remove-btn" onClick={() => toggleManageStory(story.id)}>
+                            <Minus className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      ))
+                  )}
                 </div>
-                <Button
-                  onClick={addToSprint}
-                  disabled={selectedBacklogStories.length === 0}
-                  className="bg-teal-600 hover:bg-teal-700"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add {selectedBacklogStories.length > 0 && `(${selectedBacklogStories.length})`} to Sprint
-                </Button>
               </div>
 
-              {/* Backlog Stories */}
-              <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                <h3 className="text-gray-900 mb-4">
-                  Product Backlog ({backlogStories.length} undone stories)
-                </h3>
-                {backlogStories.length === 0 ? (
-                  <p className="text-gray-500 text-center py-8">
-                    No undone stories in product backlog
-                  </p>
-                ) : (
-                  <div className="space-y-2">
-                    {backlogStories.map((story) => (
+              {/* Available backlog */}
+              <div className="manage-section">
+                <h4 className="manage-section-title">
+                  Backlog ({backlogStories.filter((s) => !manageSelectedIds.includes(s.id) && (!s.isInSprint || s.currentSprintId === managingSprint?.id)).length} available)
+                </h4>
+                <div className="manage-story-list">
+                  {backlogStories
+                    .filter(
+                      (s) =>
+                        !manageSelectedIds.includes(s.id) &&
+                        (!s.isInSprint || s.currentSprintId === managingSprint?.id)
+                    )
+                    .map((story) => (
                       <div
                         key={story.id}
-                        className={`p-4 bg-white border rounded-lg cursor-pointer transition-colors ${
-                          selectedBacklogStories.includes(story.id)
-                            ? "border-teal-500 bg-teal-50"
-                            : "border-gray-200 hover:border-teal-300"
-                        }`}
-                        onClick={() => toggleBacklogSelection(story.id)}
+                        className="manage-story-item"
+                        onClick={() => toggleManageStory(story.id)}
                       >
-                        <div className="flex items-start gap-3">
-                          <Checkbox
-                            checked={selectedBacklogStories.includes(story.id)}
-                            onCheckedChange={() => toggleBacklogSelection(story.id)}
-                            className="mt-1"
-                          />
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-teal-600">{story.id}</span>
-                              <Badge
-                                variant="outline"
-                                className="bg-gray-100 text-gray-700 border-gray-200"
-                              >
-                                {story.status.toUpperCase().replace("-", " ")}
-                              </Badge>
-                            </div>
-                            <h4 className="mb-2">{story.title}</h4>
-                            <div className="flex items-center gap-4 text-gray-600">
-                              <span>Epic: {story.epic}</span>
-                              <span>•</span>
-                              <span>Dev: {story.devHours}h</span>
-                              <span>QA: {story.qaHours}h</span>
-                              <span>${story.cost}</span>
-                            </div>
+                        <Checkbox
+                          checked={false}
+                          onCheckedChange={() => toggleManageStory(story.id)}
+                        />
+                        <div className="manage-story-info">
+                          <span>{story.title}</span>
+                          <div className="story-select-meta">
+                            {story.epicTitle && <span className="meta-chip epic-chip">{story.epicTitle}</span>}
+                            {story.featureTitle && <span className="meta-chip feat-chip">{story.featureTitle}</span>}
+                            {story.storyPoints != null && <span className="meta-chip pts-chip">{story.storyPoints} pts</span>}
+                            {story.estimatedDevHours != null && <span className="meta-chip hours-chip">{story.estimatedDevHours}h dev</span>}
                           </div>
                         </div>
+                        <button className="inline-add-btn" onClick={(e) => { e.stopPropagation(); toggleManageStory(story.id); }}>
+                          <Plus className="h-3.5 w-3.5" />
+                        </button>
                       </div>
                     ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Current Sprint Stories */}
-              <div className="border border-gray-200 rounded-lg p-4 bg-white">
-                <h3 className="text-gray-900 mb-4">
-                  Current Sprint ({undoneSprintStories.length} undone stories)
-                </h3>
-                {undoneSprintStories.length === 0 ? (
-                  <p className="text-gray-500 text-center py-8">
-                    No stories in sprint backlog
-                  </p>
-                ) : (
-                  <div className="space-y-2">
-                    {undoneSprintStories.map((story) => (
-                      <div
-                        key={story.id}
-                        className="p-4 border border-gray-200 rounded-lg bg-gray-50"
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-teal-600">{story.id}</span>
-                              <Badge
-                                variant="outline"
-                                className={
-                                  story.status === "in-progress"
-                                    ? "bg-blue-100 text-blue-700 border-blue-200"
-                                    : "bg-gray-100 text-gray-700 border-gray-200"
-                                }
-                              >
-                                {story.status.toUpperCase().replace("-", " ")}
-                              </Badge>
-                            </div>
-                            <h4 className="mb-2">{story.title}</h4>
-                            <div className="flex items-center gap-4 text-gray-600">
-                              <span>Epic: {story.epic}</span>
-                              <span>•</span>
-                              <span>Dev: {story.devHours}h</span>
-                              <span>QA: {story.qaHours}h</span>
-                              <span>${story.cost}</span>
-                            </div>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeFromSprint(story.id)}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                          >
-                            <Minus className="w-4 h-4 mr-2" />
-                            Remove
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                  {backlogStories.filter(
+                    (s) =>
+                      !manageSelectedIds.includes(s.id) &&
+                      (!s.isInSprint || s.currentSprintId === managingSprint?.id)
+                  ).length === 0 && (
+                      <p className="no-stories-hint">All stories are already assigned.</p>
+                    )}
+                </div>
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 mt-4">
-              <Button
-                variant="outline"
-                onClick={() => setIsDialogOpen(false)}
-                className="border-gray-300 text-gray-700 hover:bg-gray-50"
-              >
-                Close
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setManageDialogOpen(false)} disabled={saving}>
+                Cancel
               </Button>
-            </div>
+              <Button onClick={handleSaveSprintStories} disabled={saving} className="create-sprint-confirm-btn">
+                {saving ? (
+                  <><Loader2 className="h-4 w-4 animate-spin mr-2" />Saving…</>
+                ) : (
+                  "Save Changes"
+                )}
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* ======================== DELETE CONFIRM DIALOG ======================== */}
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Sprint</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete <strong>"{deletingSprintName}"</strong>? All stories
+                will be moved back to the unassigned backlog. This cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteSprint}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                Delete Sprint
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </DndProvider>
   );

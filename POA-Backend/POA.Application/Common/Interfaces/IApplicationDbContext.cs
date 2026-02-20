@@ -26,6 +26,8 @@ public interface IApplicationDbContext
 
     DbSet<Sprint> Sprints { get; }
 
+    DbSet<SprintStory> SprintStories { get; }
+
     DbSet<LlmPrompt> LlmPrompts { get; }
 
     DbSet<SrsJob> SrsJobs { get; }

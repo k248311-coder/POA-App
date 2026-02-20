@@ -43,6 +43,10 @@ public sealed class StoryConfiguration : IEntityTypeConfiguration<Story>
             .HasColumnName("created_at")
             .HasColumnType("timestamptz");
 
+        builder.Property(s => s.Priority)
+            .HasColumnName("priority")
+            .HasDefaultValue(0);
+
         // Stories table doesn't have updated_at column, so ignore it
         builder.Ignore(s => s.UpdatedAt);
 
