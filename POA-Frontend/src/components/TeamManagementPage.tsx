@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Card, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import { Badge } from "./ui/badge";
@@ -20,7 +20,7 @@ interface TeamMember {
   avatar: string;
 }
 
-export function TeamManagementPage() {
+export function TeamManagementPage({ projectId: _projectId }: { projectId: string }) {
   const [teamMembers] = useState<TeamMember[]>([
     {
       id: "1",

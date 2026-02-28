@@ -26,7 +26,10 @@ public sealed class StoryConfiguration : IEntityTypeConfiguration<Story>
             .HasColumnName("description");
 
         builder.Property(s => s.AcceptanceCriteria)
-            .HasColumnName("acceptance_criteria");
+            .HasColumnName("acceptance_criteria")
+            .HasConversion(
+                v => string.Join("\n", v),
+                v => v.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries).ToList());
 
         builder.Property(s => s.StoryPoints)
             .HasColumnName("story_points");

@@ -1,10 +1,10 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Upload, FileText, X, ArrowLeft } from "lucide-react";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 
 interface NewProjectPageProps {
   onCreateProject: (projectName: string, srsFile: File | null) => void;
@@ -45,7 +45,7 @@ export function NewProjectPage({ onCreateProject, onCancel }: NewProjectPageProp
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    
+
     const file = e.dataTransfer.files?.[0];
     if (file) {
       const validTypes = ['.pdf', '.doc', '.docx', '.txt'];
@@ -69,7 +69,7 @@ export function NewProjectPage({ onCreateProject, onCancel }: NewProjectPageProp
       toast.error("Please enter a project name");
       return;
     }
-    
+
     setIsProcessing(true);
     try {
       await onCreateProject(projectName, srsFile);

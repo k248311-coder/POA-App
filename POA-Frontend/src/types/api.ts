@@ -45,6 +45,12 @@ export interface ProjectBacklogStory {
   status: string;
   totalCost: number;
   tasks: ProjectBacklogTask[];
+  testCases: ProjectBacklogTestCase[];
+}
+
+export interface ProjectBacklogTestCase {
+  id: string;
+  testCaseText: string;
 }
 
 export interface ProjectBacklogTask {

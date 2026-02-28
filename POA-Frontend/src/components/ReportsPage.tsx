@@ -3,7 +3,7 @@ import { Button } from "./ui/button";
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { FileText, Download, Clock } from "lucide-react";
 
-export function ReportsPage() {
+export function ReportsPage({ projectId: _projectId }: { projectId: string }) {
   const burndownData = [
     { day: "Day 1", remaining: 500, ideal: 500 },
     { day: "Day 2", remaining: 475, ideal: 450 },

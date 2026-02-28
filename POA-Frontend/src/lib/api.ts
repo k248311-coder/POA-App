@@ -4,6 +4,7 @@ import type {
   LoginRequest,
   LoginResponse,
   ProjectBacklog,
+  ProjectBacklogStory,
   ProjectDashboard,
   ProjectEstimate,
   ProjectSummary,
@@ -74,7 +75,7 @@ async function fetchJson<T>(input: string, init?: RequestInit): Promise<T> {
     ? [API_BASE_URL]
     : DEFAULT_API_BASE_URLS;
 
-  let lastError: Error | null = null;
+
 
   for (const baseUrl of urlsToTry) {
     try {
@@ -98,8 +99,6 @@ async function fetchJson<T>(input: string, init?: RequestInit): Promise<T> {
       const text = await response.text();
       return text ? JSON.parse(text) : ({} as T);
     } catch (error) {
-      lastError = error instanceof Error ? error : new Error(String(error));
-
       // If it's a network error and we have more URLs to try, continue
       if (
         error instanceof TypeError &&
@@ -170,7 +169,7 @@ export async function createProject(
     ? [API_BASE_URL]
     : DEFAULT_API_BASE_URLS;
 
-  let lastError: Error | null = null;
+
 
   for (const baseUrl of urlsToTry) {
     try {
@@ -195,8 +194,6 @@ export async function createProject(
 
       return (await response.json()) as CreateProjectResponse;
     } catch (error) {
-      lastError = error instanceof Error ? error : new Error(String(error));
-
       if (
         error instanceof TypeError &&
         error.message.includes("fetch") &&
@@ -256,6 +253,14 @@ export function reorderSprintStories(projectId: string, sprintId: string, ordere
   return fetchJson<void>(`/api/projects/${projectId}/sprints/${sprintId}/stories/reorder`, {
     method: "PUT",
     body: JSON.stringify({ orderedStoryIds }),
+    signal,
+  });
+}
+
+export function updateStory(storyId: string, data: Partial<ProjectBacklogStory>, signal?: AbortSignal) {
+  return fetchJson<void>(`/api/projects/stories/${storyId}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
     signal,
   });
 }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -94,8 +94,8 @@ export function LoginPage({ onLogin, onNavigateToSignup, onNavigateToJoinTeam }:
             </button>
           </CardContent>
           <CardFooter className="flex flex-col space-y-3">
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               className="w-full bg-teal-600 hover:bg-teal-700"
               disabled={isLoading}
             >

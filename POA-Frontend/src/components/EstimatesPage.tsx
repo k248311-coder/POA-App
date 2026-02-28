@@ -6,7 +6,7 @@ import { Label } from "./ui/label";
 import { Button } from "./ui/button";
 import { Calculator, FileSpreadsheet } from "lucide-react";
 
-export function EstimatesPage() {
+export function EstimatesPage({ projectId: _projectId }: { projectId: string }) {
   const [numDevs, setNumDevs] = useState(3);
   const [numQAs, setNumQAs] = useState(2);
   const [hoursPerDay, setHoursPerDay] = useState(8);

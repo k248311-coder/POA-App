@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { TrendingUp, Clock } from "lucide-react";
 
-export function TeamMemberReports() {
+export function TeamMemberReports({ projectId: _projectId }: { projectId: string }) {
   const hoursPerStory = [
     { name: "User Login API", hours: 8, color: "#0d9488" },
     { name: "Login UI Component", hours: 5, color: "#3b82f6" },
@@ -113,19 +113,19 @@ export function TeamMemberReports() {
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Line 
-                  type="monotone" 
-                  dataKey="planned" 
-                  stroke="#94a3b8" 
-                  strokeWidth={2} 
-                  name="Planned" 
+                <Line
+                  type="monotone"
+                  dataKey="planned"
+                  stroke="#94a3b8"
+                  strokeWidth={2}
+                  name="Planned"
                 />
-                <Line 
-                  type="monotone" 
-                  dataKey="actual" 
-                  stroke="#0d9488" 
-                  strokeWidth={2} 
-                  name="Actual" 
+                <Line
+                  type="monotone"
+                  dataKey="actual"
+                  stroke="#0d9488"
+                  strokeWidth={2}
+                  name="Actual"
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -149,12 +149,12 @@ export function TeamMemberReports() {
               <YAxis />
               <Tooltip />
               <Legend />
-              <Line 
-                type="monotone" 
-                dataKey="hours" 
-                stroke="#3b82f6" 
-                strokeWidth={2} 
-                name="Hours Logged" 
+              <Line
+                type="monotone"
+                dataKey="hours"
+                stroke="#3b82f6"
+                strokeWidth={2}
+                name="Hours Logged"
               />
             </LineChart>
           </ResponsiveContainer>

@@ -45,7 +45,7 @@ import {
 } from "lucide-react";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 import type {
   Sprint,
@@ -489,27 +489,7 @@ export function PrioritizationPage({ userRole = "po", projectId }: Prioritizatio
     [projectId]
   );
 
-  // ---- Remove story from sprint inline ----
-  const handleRemoveFromSprint = async (sprintId: string, storyId: string) => {
-    const sprint = sprints.find((s) => s.id === sprintId);
-    if (!sprint) return;
-    const newIds = sprint.stories.filter((s) => s.id !== storyId).map((s) => s.id);
-    try {
-      await updateSprintStories(projectId, sprintId, newIds);
-      setSprints((prev) =>
-        prev.map((s) =>
-          s.id === sprintId
-            ? { ...s, stories: s.stories.filter((st) => st.id !== storyId) }
-            : s
-        )
-      );
-      const updatedStories = await getBacklogStories(projectId);
-      setBacklogStories(updatedStories);
-      toast.success("Story removed from sprint.");
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to remove story");
-    }
-  };
+
 
   // ---- Helpers ----
   const calculateDuration = (start: Date, end: Date) => {

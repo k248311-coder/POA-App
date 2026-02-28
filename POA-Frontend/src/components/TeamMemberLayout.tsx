@@ -1,6 +1,6 @@
 import { LayoutDashboard, FileText, FolderKanban, ListOrdered, BarChart3, User, LogOut, Menu, X, ChevronDown } from "lucide-react";
 import { Button } from "./ui/button";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,7 +9,7 @@ import {
 } from "./ui/dropdown-menu";
 
 interface TeamMemberLayoutProps {
-  children: React.ReactNode;
+  children: ReactNode;
   currentPage: string;
   onNavigate: (page: string) => void;
   onLogout: () => void;
@@ -37,7 +37,7 @@ export function TeamMemberLayout({ children, currentPage, onNavigate, onLogout, 
           <div className="flex items-center h-16 flex-shrink-0 px-6 border-b border-gray-200">
             <h1 className="text-teal-600">POA Platform</h1>
           </div>
-          
+
           {/* Project Selector */}
           {projectName && onSwitchProject && (
             <div className="px-4 py-3 border-b border-gray-200">
@@ -67,11 +67,10 @@ export function TeamMemberLayout({ children, currentPage, onNavigate, onLogout, 
                 <button
                   key={item.name}
                   onClick={() => onNavigate(item.page)}
-                  className={`w-full flex items-center px-4 py-3 rounded-lg transition-colors ${
-                    currentPage === item.page
+                  className={`w-full flex items-center px-4 py-3 rounded-lg transition-colors ${currentPage === item.page
                       ? "bg-teal-50 text-teal-600"
                       : "text-gray-700 hover:bg-gray-100"
-                  }`}
+                    }`}
                 >
                   <Icon className="mr-3 h-5 w-5" />
                   {item.name}
@@ -117,11 +116,10 @@ export function TeamMemberLayout({ children, currentPage, onNavigate, onLogout, 
                     onNavigate(item.page);
                     setMobileMenuOpen(false);
                   }}
-                  className={`w-full flex items-center px-4 py-3 rounded-lg transition-colors ${
-                    currentPage === item.page
+                  className={`w-full flex items-center px-4 py-3 rounded-lg transition-colors ${currentPage === item.page
                       ? "bg-teal-50 text-teal-600"
                       : "text-gray-700 hover:bg-gray-100"
-                  }`}
+                    }`}
                 >
                   <Icon className="mr-3 h-5 w-5" />
                   {item.name}

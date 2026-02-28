@@ -12,7 +12,7 @@ public sealed class Story : BaseAuditableEntity
 
     public string? Description { get; set; }
 
-    public string? AcceptanceCriteria { get; set; }
+    public List<string> AcceptanceCriteria { get; set; } = new List<string>();
 
     public int? StoryPoints { get; set; }
 

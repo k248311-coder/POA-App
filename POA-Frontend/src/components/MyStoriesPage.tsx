@@ -1,10 +1,9 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
-import { Badge } from "./ui/badge";
 import { FileText, Clock } from "lucide-react";
 
 interface Story {
@@ -17,7 +16,7 @@ interface Story {
   loggedHours: number;
 }
 
-export function MyStoriesPage() {
+export function MyStoriesPage({ projectId: _projectId }: { projectId: string }) {
   const [stories, setStories] = useState<Story[]>([
     {
       id: "DEV-123",
@@ -69,7 +68,7 @@ export function MyStoriesPage() {
   const [hourInputs, setHourInputs] = useState<{ [key: string]: string }>({});
 
   const updateStatus = (id: string, newStatus: string) => {
-    setStories(stories.map(story => 
+    setStories(stories.map(story =>
       story.id === id ? { ...story, status: newStatus } : story
     ));
   };
@@ -77,25 +76,12 @@ export function MyStoriesPage() {
   const logHours = (id: string) => {
     const hoursToAdd = parseFloat(hourInputs[id] || "0");
     if (hoursToAdd > 0) {
-      setStories(stories.map(story => 
-        story.id === id 
-          ? { ...story, loggedHours: story.loggedHours + hoursToAdd } 
+      setStories(stories.map(story =>
+        story.id === id
+          ? { ...story, loggedHours: story.loggedHours + hoursToAdd }
           : story
       ));
       setHourInputs({ ...hourInputs, [id]: "" });
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Done":
-        return "bg-green-100 text-green-700 border-green-200";
-      case "In Progress":
-        return "bg-blue-100 text-blue-700 border-blue-200";
-      case "In Validation":
-        return "bg-purple-100 text-purple-700 border-purple-200";
-      default:
-        return "bg-gray-100 text-gray-700 border-gray-200";
     }
   };
 
@@ -184,7 +170,7 @@ export function MyStoriesPage() {
                     <TableCell>
                       <Select
                         value={story.status}
-                        onValueChange={(val) => updateStatus(story.id, val)}
+                        onValueChange={(val: string) => updateStatus(story.id, val)}
                       >
                         <SelectTrigger className="w-[140px]">
                           <SelectValue />
@@ -212,9 +198,9 @@ export function MyStoriesPage() {
                           placeholder="Hours"
                           className="w-20 h-8"
                           value={hourInputs[story.id] || ""}
-                          onChange={(e) => setHourInputs({ 
-                            ...hourInputs, 
-                            [story.id]: e.target.value 
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setHourInputs({
+                            ...hourInputs,
+                            [story.id]: e.target.value
                           })}
                         />
                         <Button
