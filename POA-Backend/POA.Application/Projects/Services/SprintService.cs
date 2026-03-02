@@ -278,4 +278,30 @@ public sealed class SprintService(IApplicationDbContext context) : ISprintServic
 
         await context.SaveChangesAsync(cancellationToken);
     }
+
+    public async SystemTask CloseSprintAsync(Guid sprintId, CloseSprintRequestDto request, CancellationToken cancellationToken = default)
+    {
+        var sprint = await context.Sprints
+            .FirstOrDefaultAsync(s => s.Id == sprintId, cancellationToken)
+            ?? throw new InvalidOperationException($"Sprint {sprintId} not found.");
+
+        if (sprint.Status == SprintStatus.completed)
+            throw new InvalidOperationException("Sprint is already completed.");
+
+        sprint.Status = SprintStatus.completed;
+
+        var retrospective = new SprintRetrospective
+        {
+            Id = Guid.NewGuid(),
+            SprintId = sprintId,
+            WhatWentWell = request.WhatWentWell,
+            WhatDidntGoWell = request.WhatDidntGoWell,
+            IdeasGoingForward = request.IdeasGoingForward,
+            ActionItems = request.ActionItems,
+            CreatedAt = DateTimeOffset.UtcNow
+        };
+
+        context.SprintRetrospectives.Add(retrospective);
+        await context.SaveChangesAsync(cancellationToken);
+    }
 }

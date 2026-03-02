@@ -38,6 +38,8 @@ public interface IApplicationDbContext
 
     DbSet<Worklog> Worklogs { get; }
 
+    DbSet<SprintRetrospective> SprintRetrospectives { get; }
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
 

@@ -43,6 +43,8 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
 
     public DbSet<Worklog> Worklogs => Set<Worklog>();
 
+    public DbSet<SprintRetrospective> SprintRetrospectives => Set<SprintRetrospective>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

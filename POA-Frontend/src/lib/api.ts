@@ -12,6 +12,7 @@ import type {
   ProjectWorklog,
   SignupRequest,
   SignupResponse,
+  CloseSprintRequest,
 } from "../types/api";
 
 // --- Sprint Types ---
@@ -260,6 +261,14 @@ export function reorderSprintStories(projectId: string, sprintId: string, ordere
 export function updateStory(storyId: string, data: Partial<ProjectBacklogStory>, signal?: AbortSignal) {
   return fetchJson<void>(`/api/projects/stories/${storyId}`, {
     method: "PUT",
+    body: JSON.stringify(data),
+    signal,
+  });
+}
+
+export function closeSprint(projectId: string, sprintId: string, data: CloseSprintRequest, signal?: AbortSignal) {
+  return fetchJson<void>(`/api/projects/${projectId}/sprints/${sprintId}/close`, {
+    method: "POST",
     body: JSON.stringify(data),
     signal,
   });

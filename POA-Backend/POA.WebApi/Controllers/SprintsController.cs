@@ -104,4 +104,30 @@ public sealed class SprintsController(ISprintService sprintService) : Controller
             return NotFound(ex.Message);
         }
     }
+
+    /// <summary>Close a sprint with retrospective answers.</summary>
+    [HttpPost("{sprintId:guid}/close")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> CloseSprint(
+        [FromRoute] Guid projectId,
+        [FromRoute] Guid sprintId,
+        [FromBody] CloseSprintRequestDto request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await sprintService.CloseSprintAsync(sprintId, request, cancellationToken);
+            return NoContent();
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("not found"))
+        {
+            return NotFound(ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
 }

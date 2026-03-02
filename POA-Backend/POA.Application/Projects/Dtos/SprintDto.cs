@@ -51,3 +51,9 @@ public sealed record BacklogStoryDto(
     bool IsInSprint,
     Guid? CurrentSprintId,
     string? CurrentSprintName);
+
+public sealed record CloseSprintRequestDto(
+    string WhatWentWell,
+    string WhatDidntGoWell,
+    string IdeasGoingForward,
+    string ActionItems);

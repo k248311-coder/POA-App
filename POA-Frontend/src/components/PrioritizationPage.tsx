@@ -60,6 +60,7 @@ import {
   deleteSprint as apiDeleteSprint,
   updateSprintStories,
   reorderSprintStories,
+  closeSprint,
 } from "../lib/api";
 
 // ======================== Types ========================
@@ -177,12 +178,14 @@ function SprintCard({
   isReadOnly,
   onDeleteSprint,
   onManageStories,
+  onCloseSprint,
   onMoveCard,
 }: {
   sprint: Sprint;
   isReadOnly: boolean;
   onDeleteSprint: (id: string, name: string) => void;
   onManageStories: (sprint: Sprint) => void;
+  onCloseSprint: (sprint: Sprint) => void;
   onMoveCard: (sprintId: string, dragIdx: number, hoverIdx: number) => void;
 }) {
   const [expanded, setExpanded] = useState(true);
@@ -246,6 +249,17 @@ function SprintCard({
           {/* Actions */}
           {!isReadOnly && (
             <div className="sprint-actions">
+              {sprint.status !== "completed" && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="sprint-manage-btn border-teal-200 text-teal-700 hover:bg-teal-50"
+                  onClick={() => onCloseSprint(sprint)}
+                >
+                  <CheckCircle className="h-3.5 w-3.5 mr-1" />
+                  Close
+                </Button>
+              )}
               <Button
                 size="sm"
                 variant="outline"
@@ -336,10 +350,19 @@ export function PrioritizationPage({ userRole = "po", projectId }: Prioritizatio
   const [manageSelectedIds, setManageSelectedIds] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
-  // Delete dialog
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingSprintId, setDeletingSprintId] = useState<string | null>(null);
   const [deletingSprintName, setDeletingSprintName] = useState("");
+
+  // Retrospective dialog
+  const [retroDialogOpen, setRetroDialogOpen] = useState(false);
+  const [retroSprintId, setRetroSprintId] = useState<string | null>(null);
+  const [retroSprintName, setRetroSprintName] = useState("");
+  const [whatWentWell, setWhatWentWell] = useState("");
+  const [whatDidntGoWell, setWhatDidntGoWell] = useState("");
+  const [ideasGoingForward, setIdeasGoingForward] = useState("");
+  const [actionItems, setActionItems] = useState("");
+  const [closing, setClosing] = useState(false);
 
   // Debounce timer for reorder saves
   const reorderTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -454,6 +477,38 @@ export function PrioritizationPage({ userRole = "po", projectId }: Prioritizatio
     setManageSelectedIds((prev) =>
       prev.includes(storyId) ? prev.filter((id) => id !== storyId) : [...prev, storyId]
     );
+  };
+
+  // ---- Close Sprint (Retrospective) ----
+  const openRetroDialog = (sprint: Sprint) => {
+    setRetroSprintId(sprint.id);
+    setRetroSprintName(sprint.name);
+    setWhatWentWell("");
+    setWhatDidntGoWell("");
+    setIdeasGoingForward("");
+    setActionItems("");
+    setRetroDialogOpen(true);
+  };
+
+  const handleCloseSprint = async () => {
+    if (!retroSprintId) return;
+    setClosing(true);
+    try {
+      await closeSprint(projectId, retroSprintId, {
+        whatWentWell,
+        whatDidntGoWell,
+        ideasGoingForward,
+        actionItems,
+      });
+      // Reload everything
+      await loadData();
+      toast.success(`Sprint "${retroSprintName}" has been closed.`);
+      setRetroDialogOpen(false);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to close sprint");
+    } finally {
+      setClosing(false);
+    }
   };
 
   // ---- Drag & Drop Reorder ----
@@ -666,6 +721,7 @@ export function PrioritizationPage({ userRole = "po", projectId }: Prioritizatio
                   setDeleteDialogOpen(true);
                 }}
                 onManageStories={openManageDialog}
+                onCloseSprint={openRetroDialog}
                 onMoveCard={handleMoveCard}
               />
             ))}
@@ -967,6 +1023,81 @@ export function PrioritizationPage({ userRole = "po", projectId }: Prioritizatio
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* ======================== RETROSPECTIVE DIALOG ======================== */}
+        <Dialog open={retroDialogOpen} onOpenChange={setRetroDialogOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Sprint Retrospective – {retroSprintName}</DialogTitle>
+              <DialogDescription>
+                Reflect on the sprint before marking it as completed.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="went-well">What went well?</Label>
+                <textarea
+                  id="went-well"
+                  className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  placeholder="Celebrate your wins..."
+                  value={whatWentWell}
+                  onChange={(e) => setWhatWentWell(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="didnt-well">What didn't go well?</Label>
+                <textarea
+                  id="didnt-well"
+                  className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  placeholder="Identify areas for improvement..."
+                  value={whatDidntGoWell}
+                  onChange={(e) => setWhatDidntGoWell(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="ideas">What ideas do we have going forward?</Label>
+                <textarea
+                  id="ideas"
+                  className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  placeholder="Brainstorm new approaches..."
+                  value={ideasGoingForward}
+                  onChange={(e) => setIdeasGoingForward(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="actions">How do we implement these actions? (Action Items)</Label>
+                <textarea
+                  id="actions"
+                  className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  placeholder="Specific tasks to take forward..."
+                  value={actionItems}
+                  onChange={(e) => setActionItems(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setRetroDialogOpen(false)} disabled={closing}>
+                Back
+              </Button>
+              <Button
+                onClick={handleCloseSprint}
+                className="bg-teal-600 hover:bg-teal-700 text-white"
+                disabled={closing || !whatWentWell.trim() || !whatDidntGoWell.trim()}
+              >
+                {closing ? (
+                  <><Loader2 className="h-4 w-4 animate-spin mr-2" />Closing…</>
+                ) : (
+                  "Complete Sprint"
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </DndProvider>
   );

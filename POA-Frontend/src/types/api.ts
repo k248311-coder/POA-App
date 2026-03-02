@@ -176,3 +176,10 @@ export interface CreateProjectResponse {
   message?: string | null;
 }
 
+export interface CloseSprintRequest {
+  whatWentWell: string;
+  whatDidntGoWell: string;
+  ideasGoingForward: string;
+  actionItems: string;
+}
+

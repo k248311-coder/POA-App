@@ -24,4 +24,7 @@ public interface ISprintService
 
     /// <summary>Reorder stories within a sprint by providing an ordered list of story IDs.</summary>
     System.Threading.Tasks.Task ReorderSprintStoriesAsync(Guid sprintId, ReorderSprintStoriesRequestDto request, CancellationToken cancellationToken = default);
+
+    /// <summary>Close a sprint with retrospective answers.</summary>
+    System.Threading.Tasks.Task CloseSprintAsync(Guid sprintId, CloseSprintRequestDto request, CancellationToken cancellationToken = default);
 }
