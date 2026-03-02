@@ -6,6 +6,4 @@ public sealed record SignupRequestDto(
     string Name,
     string Email,
     string Password,
-    string TeamName,
-    string? TeamDescription,
-    IReadOnlyList<string> InviteEmails);
+    string Role);

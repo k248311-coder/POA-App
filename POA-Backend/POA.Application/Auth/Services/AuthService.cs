@@ -31,10 +31,10 @@ public sealed class AuthService(
             return SignupResultDto.Failure("Email is required.");
         }
 
-        var teamName = request.TeamName?.Trim();
-        if (string.IsNullOrWhiteSpace(teamName))
+        var role = request.Role?.Trim().ToLowerInvariant();
+        if (string.IsNullOrWhiteSpace(role))
         {
-            return SignupResultDto.Failure("Team name is required.");
+             return SignupResultDto.Failure("Role is required.");
         }
 
         // Check if user already exists in our database
@@ -53,7 +53,7 @@ public sealed class AuthService(
             email, 
             request.Password, 
             displayName: name, 
-            role: "po", 
+            role: role, 
             cancellationToken);
         
         if (!supabaseResult.Success)
@@ -74,51 +74,11 @@ public sealed class AuthService(
             return SignupResultDto.Failure($"Invalid user ID returned from authentication service: {supabaseResult.SupabaseUserId}");
         }
 
-        // Step 2: Supabase creates user in auth.users (done by SignUpAsync)
-        // Step 3: Database trigger copies user to public.users (handled by database trigger)
-        // Step 4: Create team - wait a moment for the trigger to complete, then verify user exists in public.users
+        // Step 2: Verification (optional step - wait for trigger)
+        await System.Threading.Tasks.Task.Delay(300, cancellationToken);
         
-        // Wait a brief moment for the database trigger to complete
-        await System.Threading.Tasks.Task.Delay(100, cancellationToken);
-        
-        // Verify the user exists in public.users (created by trigger)
-        var user = await context.Users
-            .FirstOrDefaultAsync(u => u.SupabaseUserId == supabaseUserId, cancellationToken);
-        
-        if (user == null)
-        {
-            // User should have been created by trigger, but it's not there yet
-            // Try waiting a bit longer and retry
-            await System.Threading.Tasks.Task.Delay(500, cancellationToken);
-            user = await context.Users
-                .FirstOrDefaultAsync(u => u.SupabaseUserId == supabaseUserId, cancellationToken);
-            
-            if (user == null)
-            {
-                return SignupResultDto.Failure("User was created in auth.users but not found in public.users. Please check your database trigger configuration.");
-            }
-        }
-
-        // Create team with reference to the user
-        var team = new Team
-        {
-            Id = Guid.NewGuid(),
-            Name = teamName,
-            OwnerId = user.SupabaseUserId
-        };
-
-        context.Teams.Add(team);
-
-        try
-        {
-            await context.SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateException exception)
-        {
-            return SignupResultDto.Failure($"Failed to create team: {exception.GetBaseException().Message}");
-        }
-
-        return SignupResultDto.CreateSuccess(user.SupabaseUserId, team.Id);
+        // Return success with user ID. Team ID is null for now as per requirements.
+        return SignupResultDto.CreateSuccess(supabaseUserId, Guid.Empty);
     }
 
     public async Task<LoginResultDto> LoginAsync(LoginRequestDto request, CancellationToken cancellationToken = default)
