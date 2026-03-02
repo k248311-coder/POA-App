@@ -1,0 +1,46 @@
+Objective:
+Verify that a user can complete the full project management workflow in the application without errors.
+
+Preconditions:
+
+Application deployed in test environment
+
+User account exists and has proper permissions
+
+Sample project data is available
+
+Test Steps:
+
+Login – Sign in with valid credentials
+
+Enter SRS – Upload or input the Software Requirements Specification
+
+Verify Product Backlog – Check that backlog items appear correctly
+
+Create Sprints – Set up a sprint with start and end dates
+
+Add Stories to Sprint – Assign backlog items to the sprint
+
+Verify Charts – Check burndown, velocity, and other project charts
+
+Update/Track Progress – Mark tasks complete and verify updates in charts
+
+Logout – Sign out from the application
+
+Expected Results:
+
+User logs in successfully
+
+SRS is saved and displayed correctly
+
+Product backlog reflects all items accurately
+
+Sprint is created with correct dates and items
+
+Charts show accurate, real-time data
+
+Progress updates reflect in both sprint and charts
+
+No UI errors or broken elements
+
+Logout completes without issues
