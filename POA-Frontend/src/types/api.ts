@@ -138,9 +138,7 @@ export interface SignupRequest {
   name: string;
   email: string;
   password: string;
-  teamName: string;
-  teamDescription?: string | null;
-  inviteEmails: string[];
+  role: string;
 }
 
 export interface SignupResponse {
