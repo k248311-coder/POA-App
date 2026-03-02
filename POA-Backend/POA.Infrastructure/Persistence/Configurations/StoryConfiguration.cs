@@ -26,7 +26,10 @@ public sealed class StoryConfiguration : IEntityTypeConfiguration<Story>
             .HasColumnName("description");
 
         builder.Property(s => s.AcceptanceCriteria)
-            .HasColumnName("acceptance_criteria");
+            .HasColumnName("acceptance_criteria")
+            .HasConversion(
+                v => string.Join("\n", v),
+                v => v.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries).ToList());
 
         builder.Property(s => s.StoryPoints)
             .HasColumnName("story_points");
@@ -42,6 +45,10 @@ public sealed class StoryConfiguration : IEntityTypeConfiguration<Story>
         builder.Property(s => s.CreatedAt)
             .HasColumnName("created_at")
             .HasColumnType("timestamptz");
+
+        builder.Property(s => s.Priority)
+            .HasColumnName("priority")
+            .HasDefaultValue(0);
 
         // Stories table doesn't have updated_at column, so ignore it
         builder.Ignore(s => s.UpdatedAt);

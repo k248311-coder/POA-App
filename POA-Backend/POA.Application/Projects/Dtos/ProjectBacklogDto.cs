@@ -33,7 +33,12 @@ public sealed record ProjectBacklogStoryDto(
     decimal? EstimatedTestHours,
     string Status,
     decimal TotalCost,
-    IReadOnlyList<ProjectBacklogTaskDto> Tasks);
+    IReadOnlyList<ProjectBacklogTaskDto> Tasks,
+    IReadOnlyList<ProjectBacklogTestCaseDto> TestCases);
+
+public sealed record ProjectBacklogTestCaseDto(
+    Guid Id,
+    string TestCaseText);
 
 public sealed record ProjectBacklogTaskDto(
     Guid Id,

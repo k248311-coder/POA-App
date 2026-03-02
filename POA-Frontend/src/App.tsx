@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useEffect, useRef } from "react";
+import { useCallback, useState, useEffect, useRef } from "react";
 import { LoginPage } from "./components/LoginPage";
 import { SignupPage } from "./components/SignupPage";
 import { JoinTeamPage } from "./components/JoinTeamPage";
@@ -16,7 +16,7 @@ import { EstimatesPage } from "./components/EstimatesPage";
 import { PrioritizationPage } from "./components/PrioritizationPage";
 import { ReportsPage } from "./components/ReportsPage";
 import { TeamManagementPage } from "./components/TeamManagementPage";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 import { Toaster } from "./components/ui/sonner";
 import type { ProjectSummary } from "./types/api";
 
@@ -71,7 +71,7 @@ function loadSession(): { isAuthenticated: boolean; userRole: UserRole; userId: 
   const id = localStorage.getItem(STORAGE_KEYS.USER_ID);
   const email = localStorage.getItem(STORAGE_KEYS.USER_EMAIL);
   const displayName = localStorage.getItem(STORAGE_KEYS.USER_DISPLAY_NAME);
-  
+
   return {
     isAuthenticated: isAuth,
     userRole: (role === "po" || role === "team" ? role : null),
@@ -114,7 +114,7 @@ export default function App() {
   // Initialize state from localStorage on mount
   const sessionData = loadSession();
   const savedProject = loadSelectedProject();
-  
+
   const [currentPage, setCurrentPage] = useState<Page>(() => getPageFromUrl());
   const [isAuthenticated, setIsAuthenticated] = useState(sessionData.isAuthenticated);
   const [userRole, setUserRole] = useState<UserRole>(sessionData.userRole);
@@ -122,7 +122,7 @@ export default function App() {
   const [userEmail, setUserEmail] = useState<string | null>(sessionData.userEmail);
   const [userDisplayName, setUserDisplayName] = useState<string | null>(sessionData.userDisplayName);
   const [selectedProject, setSelectedProject] = useState<ProjectSummary | null>(savedProject);
-  
+
   // Ref to track if we're handling a popstate event (to prevent circular updates)
   const isHandlingPopState = useRef(false);
   // Ref to track if this is the initial mount
@@ -288,7 +288,7 @@ export default function App() {
       if (srsFile) {
         toast.info("Processing SRS document with AI. This may take a moment...");
       }
-      
+
       const { createProject } = await import("./lib/api");
       const response = await createProject({
         name: projectName,
@@ -342,16 +342,16 @@ export default function App() {
       return <JoinTeamPage onJoinComplete={handleJoinComplete} />;
     }
 
-      return (
-        <LoginPage
-          onLogin={(role, userId, email, displayName) => handleLogin(role, userId, email, displayName)}
-          onNavigateToSignup={() => {
-            const newPage: Page = "signup";
-            setCurrentPage(newPage);
-            navigateToPage(newPage);
-          }}
-        />
-      );
+    return (
+      <LoginPage
+        onLogin={(role, userId, email, displayName) => handleLogin(role, userId, email, displayName)}
+        onNavigateToSignup={() => {
+          const newPage: Page = "signup";
+          setCurrentPage(newPage);
+          navigateToPage(newPage);
+        }}
+      />
+    );
   }
 
   // New project page

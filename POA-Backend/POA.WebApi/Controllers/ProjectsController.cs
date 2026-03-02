@@ -151,5 +151,24 @@ public sealed class ProjectsController : ControllerBase
             return NotFound();
         return Ok(job);
     }
+
+    [HttpPut("stories/{storyId:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateStory(
+        [FromRoute] Guid storyId,
+        [FromBody] UpdateStoryRequestDto request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _projectWriteService.UpdateStoryAsync(storyId, request, cancellationToken);
+            return NoContent();
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("not found"))
+        {
+            return NotFound(ex.Message);
+        }
+    }
 }
 

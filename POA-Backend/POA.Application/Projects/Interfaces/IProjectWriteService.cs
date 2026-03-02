@@ -14,5 +14,7 @@ public interface IProjectWriteService
 
     /// <summary>Applies Gemini hierarchy (epics/features/stories) to an existing project. Used by the SRS job worker.</summary>
     Task ApplyGeminiHierarchyToProjectAsync(Guid projectId, string geminiJsonResponse, CancellationToken cancellationToken = default);
+
+    System.Threading.Tasks.Task UpdateStoryAsync(Guid storyId, UpdateStoryRequestDto request, CancellationToken cancellationToken = default);
 }
 

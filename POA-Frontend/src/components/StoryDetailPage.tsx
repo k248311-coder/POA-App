@@ -2,10 +2,9 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { Badge } from "./ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { ArrowLeft, FileText, CheckSquare, Plus, Trash2 } from "lucide-react";
-import type { ProjectBacklogStory, ProjectBacklogTask } from "../types/api";
+import { ArrowLeft, FileText, CheckSquare, Plus, Trash2, Beaker } from "lucide-react";
+import type { ProjectBacklogStory, ProjectBacklogTask, ProjectBacklogTestCase } from "../types/api";
 
 const WORK_STATUS_OPTIONS = [
   "To Do",
@@ -32,29 +31,7 @@ function formatCurrency(value?: number | null) {
   return Number.isNaN(n) ? "$0" : `$${n.toLocaleString()}`;
 }
 
-function formatHours(dev?: number | null, test?: number | null) {
-  const d = dev ?? 0;
-  const t = test ?? 0;
-  return `${d}h dev · ${t}h qa`;
-}
-
-function getStatusColor(status: string) {
-  switch (status) {
-    case "Done":
-      return "bg-green-100 text-green-700 border-green-200";
-    case "In Progress":
-    case "In Review":
-    case "In QA":
-      return "bg-blue-100 text-blue-700 border-blue-200";
-    case "Planned":
-      return "bg-yellow-100 text-yellow-700 border-yellow-200";
-    default:
-      return "bg-gray-100 text-gray-700 border-gray-200";
-  }
-}
-
 export function StoryDetailPage({
-  projectId,
   story: initialStory,
   epicTitle,
   featureTitle,
@@ -71,7 +48,7 @@ export function StoryDetailPage({
   }, [initialStory.id]);
 
   const update = (patch: Partial<ProjectBacklogStory>) => {
-    setStory((prev) => ({ ...prev, ...patch }));
+    setStory((prev: ProjectBacklogStory) => ({ ...prev, ...patch }));
     setHasChanges(true);
   };
 
@@ -95,7 +72,7 @@ export function StoryDetailPage({
   };
 
   const removeCriterion = (index: number) => {
-    setAcceptanceCriteria(story.acceptanceCriteria.filter((_, i) => i !== index));
+    setAcceptanceCriteria(story.acceptanceCriteria.filter((_, i: number) => i !== index));
   };
 
   const handleSave = async () => {
@@ -105,11 +82,68 @@ export function StoryDetailPage({
     }
     setSaving(true);
     try {
-      await onStoryUpdated(story);
+      // Prepare data: new items shouldn't have GUID strings like "new-..."
+      const cleanedStory = {
+        ...story,
+        tasks: story.tasks.map(t => ({
+          ...t,
+          id: t.id.startsWith("new-") ? undefined : t.id
+        })),
+        testCases: story.testCases.map(tc => ({
+          ...tc,
+          id: tc.id.startsWith("new-") ? undefined : tc.id
+        }))
+      };
+      await onStoryUpdated(cleanedStory as any);
       setHasChanges(false);
     } finally {
       setSaving(false);
     }
+  };
+
+  const setEstimatedDevHours = (hours: number | null) => update({ estimatedDevHours: hours });
+  const setEstimatedTestHours = (hours: number | null) => update({ estimatedTestHours: hours });
+
+  // Tasks
+  const addTask = () => {
+    const newTask: ProjectBacklogTask = {
+      id: "new-" + Date.now(),
+      title: "New Task",
+      status: "To Do",
+      devHours: 0,
+      testHours: 0,
+      costDev: 0,
+      costTest: 0,
+      totalCost: 0
+    };
+    update({ tasks: [...story.tasks, newTask] });
+  };
+
+  const updateTask = (id: string, patch: Partial<ProjectBacklogTask>) => {
+    const next = story.tasks.map((t: ProjectBacklogTask) => t.id === id ? { ...t, ...patch } : t);
+    update({ tasks: next });
+  };
+
+  const removeTask = (id: string) => {
+    update({ tasks: story.tasks.filter((t: ProjectBacklogTask) => t.id !== id) });
+  };
+
+  // Test Cases
+  const addTestCase = () => {
+    const newTestCase: ProjectBacklogTestCase = {
+      id: "new-" + Date.now(),
+      testCaseText: "New Test Case"
+    };
+    update({ testCases: [...story.testCases, newTestCase] });
+  };
+
+  const updateTestCase = (id: string, text: string) => {
+    const next = story.testCases.map((tc: ProjectBacklogTestCase) => tc.id === id ? { ...tc, testCaseText: text } : tc);
+    update({ testCases: next });
+  };
+
+  const removeTestCase = (id: string) => {
+    update({ testCases: story.testCases.filter((tc: ProjectBacklogTestCase) => tc.id !== id) });
   };
 
   return (
@@ -126,7 +160,7 @@ export function StoryDetailPage({
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 items-start lg:grid-cols-2">
         <div className="space-y-6">
           <Card>
             <CardHeader>
@@ -140,7 +174,7 @@ export function StoryDetailPage({
                 <label className="text-sm font-medium text-gray-700">Title</label>
                 <Input
                   value={story.title}
-                  onChange={(e) => setTitle(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTitle(e.target.value)}
                   disabled={readOnly}
                   className="mt-1"
                   placeholder="Story title"
@@ -150,7 +184,7 @@ export function StoryDetailPage({
                 <label className="text-sm font-medium text-gray-700">Description</label>
                 <textarea
                   value={story.description ?? ""}
-                  onChange={(e) => setDescription(e.target.value || null)}
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value || null)}
                   disabled={readOnly}
                   rows={4}
                   className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
@@ -164,7 +198,7 @@ export function StoryDetailPage({
                     type="number"
                     min={0}
                     value={story.storyPoints ?? ""}
-                    onChange={(e) => {
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                       const v = e.target.value;
                       setStoryPoints(v === "" ? null : parseInt(v, 10) || null);
                     }}
@@ -193,10 +227,40 @@ export function StoryDetailPage({
                   </Select>
                 </div>
               </div>
-              <div className="flex gap-2 text-sm text-gray-600">
-                <span>Dev: {story.estimatedDevHours ?? 0}h</span>
-                <span>QA: {story.estimatedTestHours ?? 0}h</span>
-                <span>Cost: {formatCurrency(story.totalCost)}</span>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Estimated Dev Hours</label>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={story.estimatedDevHours ?? ""}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      const v = e.target.value;
+                      setEstimatedDevHours(v === "" ? null : parseFloat(v) || 0);
+                    }}
+                    disabled={readOnly}
+                    className="mt-1"
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Estimated QA Hours</label>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={story.estimatedTestHours ?? ""}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      const v = e.target.value;
+                      setEstimatedTestHours(v === "" ? null : parseFloat(v) || 0);
+                    }}
+                    disabled={readOnly}
+                    className="mt-1"
+                    placeholder="0"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end text-sm text-gray-600 font-medium">
+                <span>Total Cost: {formatCurrency(story.totalCost)}</span>
               </div>
             </CardContent>
           </Card>
@@ -217,11 +281,11 @@ export function StoryDetailPage({
               {story.acceptanceCriteria.length === 0 ? (
                 <p className="text-sm text-gray-500">No acceptance criteria yet.</p>
               ) : (
-                story.acceptanceCriteria.map((item, index) => (
+                story.acceptanceCriteria.map((item: string, index: number) => (
                   <div key={index} className="flex gap-2 items-start">
                     <Input
                       value={item}
-                      onChange={(e) => updateCriterion(index, e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateCriterion(index, e.target.value)}
                       disabled={readOnly}
                       placeholder="Criterion"
                       className="flex-1"
@@ -247,33 +311,149 @@ export function StoryDetailPage({
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CheckSquare className="h-5 w-5 text-teal-600" />
-                Tasks
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CheckSquare className="h-5 w-5 text-teal-600" />
+                  Tasks
+                </div>
+                {!readOnly && (
+                  <Button type="button" variant="outline" size="sm" onClick={addTask}>
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Task
+                  </Button>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent>
               {story.tasks.length === 0 ? (
                 <p className="text-sm text-gray-500">No tasks linked to this story.</p>
               ) : (
-                <ul className="space-y-2">
+                <div className="space-y-4">
                   {story.tasks.map((task: ProjectBacklogTask) => (
-                    <li
+                    <div
                       key={task.id}
-                      className="flex items-center gap-2 text-sm bg-gray-50 p-3 rounded-lg border border-gray-200"
+                      className="space-y-3 bg-gray-50 p-4 rounded-lg border border-gray-200"
                     >
-                      <CheckSquare className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                      <span className="flex-1">{task.title}</span>
-                      <Badge className={getStatusColor(task.status)} variant="outline">
-                        {task.status}
-                      </Badge>
-                      <span className="text-gray-500">{formatHours(task.devHours, task.testHours)}</span>
-                      {typeof task.totalCost === "number" && (
-                        <span className="font-medium">{formatCurrency(task.totalCost)}</span>
-                      )}
-                    </li>
+                      <div className="flex gap-2 items-start">
+                        <Input
+                          value={task.title}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateTask(task.id, { title: e.target.value })}
+                          disabled={readOnly}
+                          placeholder="Task title"
+                          className="flex-1 bg-white"
+                        />
+                        {!readOnly && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeTask(task.id)}
+                            aria-label="Remove task"
+                          >
+                            <Trash2 className="h-4 w-4 text-red-500" />
+                          </Button>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 items-end">
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-gray-500 uppercase">Status</label>
+                          <Select
+                            value={task.status}
+                            onValueChange={(v: string) => updateTask(task.id, { status: v })}
+                            disabled={readOnly}
+                          >
+                            <SelectTrigger className="bg-white">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {WORK_STATUS_OPTIONS.map((opt) => (
+                                <SelectItem key={opt} value={opt}>
+                                  {opt}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-gray-500 uppercase">Dev Hours</label>
+                          <Input
+                            type="number"
+                            min={0}
+                            value={task.devHours ?? ""}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                              const v = e.target.value;
+                              updateTask(task.id, { devHours: v === "" ? null : parseFloat(v) || 0 });
+                            }}
+                            disabled={readOnly}
+                            className="bg-white"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-gray-500 uppercase">QA Hours</label>
+                          <Input
+                            type="number"
+                            min={0}
+                            value={task.testHours ?? ""}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                              const v = e.target.value;
+                              updateTask(task.id, { testHours: v === "" ? null : parseFloat(v) || 0 });
+                            }}
+                            disabled={readOnly}
+                            className="bg-white"
+                          />
+                        </div>
+                      </div>
+                    </div>
                   ))}
-                </ul>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Beaker className="h-5 w-5 text-teal-600" />
+                  Test Cases
+                </div>
+                {!readOnly && (
+                  <Button type="button" variant="outline" size="sm" onClick={addTestCase}>
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Test Case
+                  </Button>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {story.testCases?.length === 0 ? (
+                <p className="text-sm text-gray-500">No test cases linked to this story.</p>
+              ) : (
+                <div className="space-y-3">
+                  {story.testCases?.map((tc: ProjectBacklogTestCase) => (
+                    <div key={tc.id} className="flex gap-2 items-start bg-gray-50 p-3 rounded-lg border border-gray-200">
+                      <textarea
+                        value={tc.testCaseText}
+                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => updateTestCase(tc.id, e.target.value)}
+                        disabled={readOnly}
+                        rows={2}
+                        className="flex-1 w-full rounded-md border border-input bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                        placeholder="Test case steps and outcome..."
+                      />
+                      {!readOnly && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeTestCase(tc.id)}
+                          aria-label="Remove test case"
+                        >
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
               )}
             </CardContent>
           </Card>
@@ -281,7 +461,7 @@ export function StoryDetailPage({
       </div>
 
       {!readOnly && hasChanges && (
-        <div className="flex justify-end gap-2">
+        <div className="flex justify-end gap-2 p-4 bg-white border-t sticky bottom-0 z-10">
           <Button variant="outline" onClick={onBack} disabled={saving}>
             Cancel
           </Button>

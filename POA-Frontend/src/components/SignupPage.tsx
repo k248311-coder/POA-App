@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -61,7 +61,7 @@ export function SignupPage({ onSignupComplete, onNavigateToLogin }: SignupPagePr
         return;
       }
 
-    onSignupComplete(response.userId, email.trim(), name.trim());
+      onSignupComplete(response.userId, email.trim(), name.trim());
     } catch (error) {
       if (error instanceof Error) {
         setSubmitError(error.message);
@@ -100,9 +100,8 @@ export function SignupPage({ onSignupComplete, onNavigateToLogin }: SignupPagePr
             {[1, 2, 3].map((s) => (
               <div
                 key={s}
-                className={`h-2 w-16 rounded-full ${
-                  s <= step ? "bg-teal-600" : "bg-gray-200"
-                }`}
+                className={`h-2 w-16 rounded-full ${s <= step ? "bg-teal-600" : "bg-gray-200"
+                  }`}
               />
             ))}
           </div>

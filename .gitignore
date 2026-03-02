@@ -2,14 +2,14 @@
 **/secrets.json
 POA-Backend/POA.WebApi/secrets.json
 node_modules
-.vs
+**.v2
+**.vs
 .env
 POA-Frontend/node_modules
 POA-Frontend/.env
 .vscode
 **/CopilotIndices/
 /POA-Backend/.vs/POA-Backend/CopilotIndices
-*.v2
 /POA-Backend/.vs
 /POA-Backend/POA.Domain/bin/
 *.cache
@@ -27,5 +27,7 @@ POA-Backend/POA.Infrastructure/bin/Debug/net8.0/POA.Infrastructure.dll
 **/temp/
 **/bin/
 **/obj/
-
+**secrets.json
 **/node_modules/
+**/.v2/
+**/.vs/

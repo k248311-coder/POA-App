@@ -139,6 +139,14 @@ public sealed class ProjectReadService(IApplicationDbContext context) : IProject
                                                 task.CostTest,
                                                 TotalCost = task.TotalCost ?? (task.CostDev ?? 0) + (task.CostTest ?? 0)
                                             })
+                                            .ToList(),
+                                        TestCases = story.TestCases
+                                            .OrderBy(tc => tc.CreatedAt)
+                                            .Select(tc => new
+                                            {
+                                                tc.Id,
+                                                tc.TestCaseText
+                                            })
                                             .ToList()
                                     })
                                     .ToList()
@@ -163,7 +171,7 @@ public sealed class ProjectReadService(IApplicationDbContext context) : IProject
                         var stories = feature.Stories
                             .Select(story =>
                             {
-                                var acceptanceCriteria = SplitAcceptanceCriteria(story.AcceptanceCriteria);
+                                var acceptanceCriteria = story.AcceptanceCriteria;
                                 var tasks = story.Tasks
                                     .Select(task => new ProjectBacklogTaskDto(
                                         task.Id,
@@ -174,6 +182,12 @@ public sealed class ProjectReadService(IApplicationDbContext context) : IProject
                                         task.CostDev,
                                         task.CostTest,
                                         task.TotalCost))
+                                    .ToList();
+
+                                var testCases = story.TestCases
+                                    .Select(tc => new ProjectBacklogTestCaseDto(
+                                        tc.Id,
+                                        tc.TestCaseText))
                                     .ToList();
 
                                 var storyStatus = ResolveStoryStatus(tasks, story.StoryPoints);
@@ -189,7 +203,8 @@ public sealed class ProjectReadService(IApplicationDbContext context) : IProject
                                     story.EstimatedTestHours,
                                     storyStatus,
                                     totalCost,
-                                    tasks);
+                                    tasks,
+                                    testCases);
                             })
                             .ToList();
 
@@ -445,19 +460,7 @@ public sealed class ProjectReadService(IApplicationDbContext context) : IProject
         };
     }
 
-    private static IReadOnlyList<string> SplitAcceptanceCriteria(string? acceptanceCriteria)
-    {
-        if (string.IsNullOrWhiteSpace(acceptanceCriteria))
-        {
-            return Array.Empty<string>();
-        }
 
-        return acceptanceCriteria
-            .Split(new[] { '\r', '\n', '•', '-', '*' }, StringSplitOptions.RemoveEmptyEntries)
-            .Select(line => line.Trim())
-            .Where(line => !string.IsNullOrWhiteSpace(line))
-            .ToArray();
-    }
 
     private static string ResolveStoryStatus(
         IReadOnlyCollection<ProjectBacklogTaskDto> tasks,

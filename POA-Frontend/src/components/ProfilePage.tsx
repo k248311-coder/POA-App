@@ -4,7 +4,7 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
-import { User, Mail, Briefcase, Clock } from "lucide-react";
+import { User, Briefcase, Clock } from "lucide-react";
 
 export function ProfilePage() {
   return (

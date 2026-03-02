@@ -202,9 +202,7 @@ public sealed class ProjectWriteService : IProjectWriteService
                         StoryPoints = jsonStory.StoryPoints,
                         EstimatedDevHours = jsonStory.EstimatedDevHours,
                         EstimatedTestHours = jsonStory.EstimatedTestHours,
-                        AcceptanceCriteria = jsonStory.AcceptanceCriteria != null
-                            ? string.Join("\n", jsonStory.AcceptanceCriteria)
-                            : null,
+                        AcceptanceCriteria = jsonStory.AcceptanceCriteria ?? new List<string>(),
                         CreatedAt = DateTime.UtcNow
                     };
 
@@ -242,6 +240,89 @@ public sealed class ProjectWriteService : IProjectWriteService
         Console.WriteLine($"[ProjectWriteService]   Features: {featureCount}");
         Console.WriteLine($"[ProjectWriteService]   Stories: {storyCount}");
         Console.WriteLine($"[ProjectWriteService]   Test Cases: {testCaseCount}");
+    }
+
+    public async System.Threading.Tasks.Task UpdateStoryAsync(Guid storyId, UpdateStoryRequestDto request, CancellationToken cancellationToken = default)
+    {
+        var story = await _context.Stories
+            .Include(s => s.Tasks)
+            .Include(s => s.TestCases)
+            .FirstOrDefaultAsync(s => s.Id == storyId, cancellationToken);
+
+        if (story == null)
+            throw new InvalidOperationException($"Story {storyId} not found.");
+
+        story.Title = request.Title;
+        story.Description = request.Description;
+        story.AcceptanceCriteria = request.AcceptanceCriteria != null ? request.AcceptanceCriteria.ToList() : new List<string>();
+        story.StoryPoints = request.StoryPoints;
+        story.EstimatedDevHours = request.EstimatedDevHours;
+        story.EstimatedTestHours = request.EstimatedTestHours;
+        story.UpdatedAt = DateTime.UtcNow;
+
+        // Update Tasks
+        var taskIdsToKeep = request.Tasks.Where(t => t.Id.HasValue).Select(t => t.Id!.Value).ToList();
+        var tasksToRemove = story.Tasks.Where(t => !taskIdsToKeep.Contains(t.Id)).ToList();
+        _context.Tasks.RemoveRange(tasksToRemove);
+
+        foreach (var taskDto in request.Tasks)
+        {
+            if (taskDto.Id.HasValue)
+            {
+                var existingTask = story.Tasks.FirstOrDefault(t => t.Id == taskDto.Id.Value);
+                if (existingTask != null)
+                {
+                    existingTask.Title = taskDto.Title;
+                    existingTask.Status = taskDto.Status;
+                    existingTask.DevHours = taskDto.DevHours;
+                    existingTask.TestHours = taskDto.TestHours;
+                    existingTask.UpdatedAt = DateTime.UtcNow;
+                }
+            }
+            else
+            {
+                story.Tasks.Add(new TaskEntity
+                {
+                    Id = Guid.NewGuid(),
+                    StoryId = story.Id,
+                    Title = taskDto.Title,
+                    Status = taskDto.Status,
+                    DevHours = taskDto.DevHours,
+                    TestHours = taskDto.TestHours,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+        }
+
+        // Update Test Cases
+        var tcIdsToKeep = request.TestCases.Where(t => t.Id.HasValue).Select(t => t.Id!.Value).ToList();
+        var tcsToRemove = story.TestCases.Where(t => !tcIdsToKeep.Contains(t.Id)).ToList();
+        _context.TestCases.RemoveRange(tcsToRemove);
+
+        foreach (var tcDto in request.TestCases)
+        {
+            if (tcDto.Id.HasValue)
+            {
+                var existingTc = story.TestCases.FirstOrDefault(t => t.Id == tcDto.Id.Value);
+                if (existingTc != null)
+                {
+                    existingTc.TestCaseText = tcDto.TestCaseText;
+                    existingTc.UpdatedAt = DateTime.UtcNow;
+                }
+            }
+            else
+            {
+                story.TestCases.Add(new TestCase
+                {
+                    Id = Guid.NewGuid(),
+                    StoryId = story.Id,
+                    TestCaseText = tcDto.TestCaseText,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+        }
+
+        await _context.SaveChangesAsync(cancellationToken);
     }
 }
 

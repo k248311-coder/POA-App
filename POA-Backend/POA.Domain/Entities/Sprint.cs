@@ -14,10 +14,12 @@ public sealed class Sprint : BaseEntity
 
     public DateOnly? EndDate { get; set; }
 
-    public string Status { get; set; } = "planned";
+    public SprintStatus Status { get; set; } = SprintStatus.planned;
 
     public Project? Project { get; set; }
 
     public ICollection<Task> Tasks { get; set; } = new List<Task>();
+
+    public ICollection<SprintStory> SprintStories { get; set; } = new List<SprintStory>();
 }
 

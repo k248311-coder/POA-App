@@ -32,7 +32,8 @@ public sealed class SprintConfiguration : IEntityTypeConfiguration<Sprint>
 
         builder.Property(s => s.Status)
             .HasColumnName("status")
-            .HasDefaultValue("planned");
+            .HasColumnType("sprint_status")
+            .HasDefaultValue(SprintStatus.planned);
 
         builder.HasOne(s => s.Project)
             .WithMany(p => p.Sprints)

@@ -1,9 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { FileText, Clock, Activity, CheckCircle2 } from "lucide-react";
-import { Badge } from "./ui/badge";
 import { Progress } from "./ui/progress";
 
-export function TeamMemberDashboard() {
+import type { ProjectSummary } from "../types/api";
+
+export function TeamMemberDashboard({ project: _project }: { project: ProjectSummary }) {
   const myStories = [
     { status: "To Do", count: 3, color: "bg-gray-500" },
     { status: "In Progress", count: 2, color: "bg-blue-500" },
@@ -46,7 +47,7 @@ export function TeamMemberDashboard() {
                 <span className="text-gray-600">Total Assigned</span>
                 <h2>{totalStories}</h2>
               </div>
-              
+
               <div className="space-y-3">
                 {myStories.map((story) => (
                   <div key={story.status} className="space-y-2">
@@ -54,8 +55,8 @@ export function TeamMemberDashboard() {
                       <span className="text-gray-600">{story.status}</span>
                       <span className="font-medium">{story.count}</span>
                     </div>
-                    <Progress 
-                      value={(story.count / totalStories) * 100} 
+                    <Progress
+                      value={(story.count / totalStories) * 100}
                       className="h-2"
                     />
                   </div>
@@ -79,7 +80,7 @@ export function TeamMemberDashboard() {
                 <p className="text-sm text-teal-700 mb-1">This Week</p>
                 <h2 className="text-teal-600">{thisWeekHours}h</h2>
               </div>
-              
+
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <p className="text-sm text-blue-700 mb-1">Total (All Time)</p>
                 <h2 className="text-blue-600">{totalHours}h</h2>
@@ -107,11 +108,10 @@ export function TeamMemberDashboard() {
           <div className="space-y-4">
             {activities.map((activity, index) => (
               <div key={index} className="flex items-start gap-3 pb-4 border-b border-gray-100 last:border-0 last:pb-0">
-                <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
-                  activity.icon === "complete" ? "bg-green-500" :
+                <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${activity.icon === "complete" ? "bg-green-500" :
                   activity.icon === "log" ? "bg-blue-500" :
-                  "bg-purple-500"
-                }`} />
+                    "bg-purple-500"
+                  }`} />
                 <div className="flex-1 min-w-0">
                   <p>{activity.text}</p>
                   <p className="text-sm text-gray-500 mt-1">{activity.time}</p>

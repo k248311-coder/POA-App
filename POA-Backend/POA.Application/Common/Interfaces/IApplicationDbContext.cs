@@ -26,6 +26,8 @@ public interface IApplicationDbContext
 
     DbSet<Sprint> Sprints { get; }
 
+    DbSet<SprintStory> SprintStories { get; }
+
     DbSet<LlmPrompt> LlmPrompts { get; }
 
     DbSet<SrsJob> SrsJobs { get; }
@@ -35,6 +37,8 @@ public interface IApplicationDbContext
     DbSet<User> Users { get; }
 
     DbSet<Worklog> Worklogs { get; }
+
+    DbSet<SprintRetrospective> SprintRetrospectives { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
