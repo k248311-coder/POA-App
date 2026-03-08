@@ -181,3 +181,26 @@ export interface CloseSprintRequest {
   actionItems: string;
 }
 
+export interface ProjectMember {
+  id: string;
+  projectId: string;
+  userId: string | null;
+  email: string;
+  displayName: string | null;
+  role: string; // "developer", "qa"
+  hourlyCost: number;
+  status: string; // "Active", "Pending"
+  createdAt: string;
+}
+
+export interface AddProjectMemberRequest {
+  email: string;
+  role: string;
+  hourlyCost: number;
+}
+
+export interface UpdateProjectMemberRequest {
+  role: string;
+  hourlyCost: number;
+}
+

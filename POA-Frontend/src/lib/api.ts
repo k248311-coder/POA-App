@@ -13,6 +13,9 @@ import type {
   SignupRequest,
   SignupResponse,
   CloseSprintRequest,
+  ProjectMember,
+  AddProjectMemberRequest,
+  UpdateProjectMemberRequest,
 } from "../types/api";
 
 // --- Sprint Types ---
@@ -122,8 +125,9 @@ async function fetchJson<T>(input: string, init?: RequestInit): Promise<T> {
   );
 }
 
-export function getProjects(signal?: AbortSignal) {
-  return fetchJson<ProjectSummary[]>("/api/projects", { signal });
+export function getProjects(userId?: string | null, signal?: AbortSignal) {
+  const query = userId ? `?userId=${userId}` : "";
+  return fetchJson<ProjectSummary[]>(`/api/projects${query}`, { signal });
 }
 
 export function getProjectBacklog(projectId: string, signal?: AbortSignal) {
@@ -270,6 +274,35 @@ export function closeSprint(projectId: string, sprintId: string, data: CloseSpri
   return fetchJson<void>(`/api/projects/${projectId}/sprints/${sprintId}/close`, {
     method: "POST",
     body: JSON.stringify(data),
+    signal,
+  });
+}
+
+// --- Team Management API ---
+
+export function getProjectMembers(projectId: string, signal?: AbortSignal) {
+  return fetchJson<ProjectMember[]>(`/api/projects/${projectId}/members`, { signal });
+}
+
+export function addProjectMember(projectId: string, data: AddProjectMemberRequest, signal?: AbortSignal) {
+  return fetchJson<ProjectMember>(`/api/projects/${projectId}/members`, {
+    method: "POST",
+    body: JSON.stringify(data),
+    signal,
+  });
+}
+
+export function updateProjectMember(memberId: string, data: UpdateProjectMemberRequest, signal?: AbortSignal) {
+  return fetchJson<void>(`/api/projects/members/${memberId}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+    signal,
+  });
+}
+
+export function removeProjectMember(memberId: string, signal?: AbortSignal) {
+  return fetchJson<void>(`/api/projects/members/${memberId}`, {
+    method: "DELETE",
     signal,
   });
 }

@@ -29,5 +29,7 @@ public sealed class Project : BaseAuditableEntity
     public ICollection<LlmPrompt> LlmPrompts { get; set; } = new List<LlmPrompt>();
 
     public ICollection<SrsJob> SrsJobs { get; set; } = new List<SrsJob>();
+
+    public ICollection<ProjectMember> Members { get; set; } = new List<ProjectMember>();
 }
 

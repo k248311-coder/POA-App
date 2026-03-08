@@ -11,6 +11,7 @@ import { getProjects } from "../lib/api";
 
 interface ProjectSelectionPageProps {
   userRole: "po" | "team";
+  userId?: string | null;
   userEmail?: string | null;
   userDisplayName?: string | null;
   onSelectProject: (project: ProjectSummary) => void;
@@ -20,6 +21,7 @@ interface ProjectSelectionPageProps {
 
 export function ProjectSelectionPage({
   userRole,
+  userId,
   userEmail,
   userDisplayName,
   onSelectProject,
@@ -37,7 +39,7 @@ export function ProjectSelectionPage({
     setIsLoading(true);
     setError(null);
 
-    getProjects(controller.signal)
+    getProjects(userId, controller.signal)
       .then(setProjects)
       .catch((err) => {
         if (err.name === "AbortError") return;

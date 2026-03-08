@@ -1,4 +1,4 @@
-import { LayoutDashboard, FileText, FolderKanban, ListOrdered, BarChart3, User, LogOut, Menu, X, ChevronDown } from "lucide-react";
+import { LayoutDashboard, FileText, FolderKanban, ListOrdered, BarChart3, User, Users, LogOut, Menu, X, ChevronDown } from "lucide-react";
 import { Button } from "./ui/button";
 import { useState, type ReactNode } from "react";
 import {
@@ -26,6 +26,7 @@ export function TeamMemberLayout({ children, currentPage, onNavigate, onLogout, 
     { name: "All Backlog", icon: FolderKanban, page: "backlog" },
     { name: "Sprint View", icon: ListOrdered, page: "prioritization" },
     { name: "Reports", icon: BarChart3, page: "reports" },
+    { name: "Team", icon: Users, page: "team" },
     { name: "Profile", icon: User, page: "profile" },
   ];
 

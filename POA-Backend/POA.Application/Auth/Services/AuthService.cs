@@ -77,6 +77,23 @@ public sealed class AuthService(
         // Step 2: Verification (optional step - wait for trigger)
         await System.Threading.Tasks.Task.Delay(300, cancellationToken);
         
+        // Link invited project members
+        var pendingMembers = await context.ProjectMembers
+            .Where(pm => pm.Email.ToLower() == email && pm.UserId == null)
+            .ToListAsync(cancellationToken);
+            
+        if (pendingMembers.Any())
+        {
+            foreach (var pm in pendingMembers)
+            {
+                pm.UserId = supabaseUserId;
+                pm.Status = "Active";
+                pm.UpdatedAt = DateTimeOffset.UtcNow;
+            }
+            
+            await context.SaveChangesAsync(cancellationToken);
+        }
+
         // Return success with user ID. Team ID is null for now as per requirements.
         return SignupResultDto.CreateSuccess(supabaseUserId, Guid.Empty);
     }

@@ -170,5 +170,66 @@ public sealed class ProjectsController : ControllerBase
             return NotFound(ex.Message);
         }
     }
+
+    // --- Team Management ---
+
+    [HttpGet("{projectId:guid}/members")]
+    [ProducesResponseType(typeof(IReadOnlyList<ProjectMemberDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetMembers([FromRoute] Guid projectId, CancellationToken cancellationToken)
+    {
+        var members = await _projectReadService.GetProjectMembersAsync(projectId, cancellationToken);
+        return Ok(members);
+    }
+
+    [HttpPost("{projectId:guid}/members")]
+    [ProducesResponseType(typeof(ProjectMemberDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> AddMember(
+        [FromRoute] Guid projectId,
+        [FromBody] AddProjectMemberRequestDto request,
+        [FromServices] ITeamService teamService,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var member = await teamService.AddMemberAsync(projectId, request, cancellationToken);
+            return CreatedAtAction(nameof(GetMembers), new { projectId }, member);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    [HttpPut("members/{memberId:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateMember(
+        [FromRoute] Guid memberId,
+        [FromBody] UpdateProjectMemberRequestDto request,
+        [FromServices] ITeamService teamService,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await teamService.UpdateMemberAsync(memberId, request, cancellationToken);
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return NotFound(ex.Message);
+        }
+    }
+
+    [HttpDelete("members/{memberId:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> RemoveMember(
+        [FromRoute] Guid memberId,
+        [FromServices] ITeamService teamService,
+        CancellationToken cancellationToken)
+    {
+        await teamService.RemoveMemberAsync(memberId, cancellationToken);
+        return NoContent();
+    }
 }
 

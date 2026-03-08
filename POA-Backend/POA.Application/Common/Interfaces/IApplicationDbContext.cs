@@ -40,6 +40,8 @@ public interface IApplicationDbContext
 
     DbSet<SprintRetrospective> SprintRetrospectives { get; }
 
+    DbSet<ProjectMember> ProjectMembers { get; }
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
 

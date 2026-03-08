@@ -17,8 +17,28 @@ public sealed class ProjectReadService(IApplicationDbContext context) : IProject
         Guid? userId,
         CancellationToken cancellationToken = default)
     {
-        var summaries = await context.Projects
-            .AsNoTracking()
+        var query = context.Projects.AsNoTracking();
+
+        if (userId.HasValue)
+        {
+            var user = await context.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.SupabaseUserId == userId.Value, cancellationToken);
+            
+            if (user != null)
+            {
+                if (user.Role == "po")
+                {
+                    query = query.Where(p => p.OwnerUserId == userId.Value);
+                }
+                else
+                {
+                    query = query.Where(p => p.Members.Any(m => m.UserId == userId.Value));
+                }
+            }
+        }
+
+        var summaries = await query
             .Select(project => new
             {
                 project.Id,
@@ -31,6 +51,7 @@ public sealed class ProjectReadService(IApplicationDbContext context) : IProject
                     .SelectMany(epic => epic.Features)
                     .SelectMany(feature => feature.Stories)
                     .SelectMany(story => story.Tasks),
+                project.Members,
                 project.CreatedAt
             })
             .Select(x => new
@@ -41,15 +62,11 @@ public sealed class ProjectReadService(IApplicationDbContext context) : IProject
                 TotalStories = x.Stories.Count(),
                 TotalTasks = x.Tasks.Count(),
                 CompletedTasks = x.Tasks.Count(task => task.Status == "done"),
+                TeamMemberCount = x.Members.Count(),
                 LastUpdated = x.Tasks
                     .Select(task => task.UpdatedAt ?? task.CreatedAt)
                     .Concat(new[] { x.CreatedAt })
-                    .Max(),
-                TeamMemberCount = x.Tasks
-                    .Where(task => task.AssigneeId != null)
-                    .Select(task => task.AssigneeId!.Value)
-                    .Distinct()
-                    .Count()
+                    .Max()
             })
             .ToListAsync(cancellationToken);
 
@@ -461,6 +478,26 @@ public sealed class ProjectReadService(IApplicationDbContext context) : IProject
     }
 
 
+
+    public async Task<IReadOnlyList<ProjectMemberDto>> GetProjectMembersAsync(Guid projectId, CancellationToken cancellationToken = default)
+    {
+        var members = await context.ProjectMembers
+            .AsNoTracking()
+            .Where(m => m.ProjectId == projectId)
+            .Select(m => new ProjectMemberDto(
+                m.Id,
+                m.ProjectId,
+                m.UserId,
+                m.Email,
+                m.User != null ? m.User.DisplayName : null,
+                m.Role,
+                m.HourlyCost,
+                m.Status,
+                m.CreatedAt))
+            .ToListAsync(cancellationToken);
+
+        return members;
+    }
 
     private static string ResolveStoryStatus(
         IReadOnlyCollection<ProjectBacklogTaskDto> tasks,

@@ -13,6 +13,7 @@ public static class DependencyInjection
         services.AddScoped<IProjectReadService, ProjectReadService>();
         services.AddScoped<IProjectWriteService, ProjectWriteService>();
         services.AddScoped<ISprintService, SprintService>();
+        services.AddScoped<ITeamService, TeamService>();
         services.AddHttpClient<ISupabaseAuthService, SupabaseAuthService>();
         
         // Configure HttpClient for Gemini with better DNS resolution and timeout

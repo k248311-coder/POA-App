@@ -377,6 +377,7 @@ export default function App() {
       <>
         <ProjectSelectionPage
           userRole={userRole}
+          userId={userId}
           userEmail={userEmail}
           userDisplayName={userDisplayName}
           onSelectProject={handleProjectSelect}
@@ -453,6 +454,9 @@ export default function App() {
         )}
         {currentPage === "reports" && selectedProject && (
           <TeamMemberReports projectId={selectedProject.id} />
+        )}
+        {currentPage === "team" && selectedProject && (
+          <TeamManagementPage projectId={selectedProject.id} readOnly />
         )}
         {currentPage === "profile" && <ProfilePage />}
       </TeamMemberLayout>
