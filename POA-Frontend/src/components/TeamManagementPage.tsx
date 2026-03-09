@@ -103,10 +103,9 @@ export function TeamManagementPage({ projectId, readOnly = false }: { projectId:
     switch (role.toLowerCase()) {
       case "developer":
         return "bg-blue-100 text-blue-700 border-blue-200";
-      case "qa":
+      case "qa analyst":
         return "bg-purple-100 text-purple-700 border-purple-200";
-      case "manager":
-      case "po":
+      case "project manager":
         return "bg-teal-100 text-teal-700 border-teal-200";
       default:
         return "bg-gray-100 text-gray-700 border-gray-200";
@@ -135,23 +134,29 @@ export function TeamManagementPage({ projectId, readOnly = false }: { projectId:
       </div>
 
       {/* Team Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-6">
             <p className="text-sm text-gray-600">Total Members</p>
-            <h2 className="mt-2 font-bold">{members.length}</h2>
+            <h2 className="mt-2 text-2xl font-bold">{members.length}</h2>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-sm text-gray-600">Project Managers</p>
+            <h2 className="mt-2 text-2xl font-bold">{members.filter(m => m.role.toLowerCase() === "project manager").length}</h2>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-6">
             <p className="text-sm text-gray-600">Developers</p>
-            <h2 className="mt-2 font-bold">{members.filter(m => m.role.toLowerCase() === "developer").length}</h2>
+            <h2 className="mt-2 text-2xl font-bold">{members.filter(m => m.role.toLowerCase() === "developer").length}</h2>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-6">
-            <p className="text-sm text-gray-600">QA Engineers</p>
-            <h2 className="mt-2 font-bold">{members.filter(m => m.role.toLowerCase() === "qa").length}</h2>
+            <p className="text-sm text-gray-600">QA Analysts</p>
+            <h2 className="mt-2 text-2xl font-bold">{members.filter(m => m.role.toLowerCase() === "qa analyst").length}</h2>
           </CardContent>
         </Card>
       </div>
@@ -255,7 +260,8 @@ export function TeamManagementPage({ projectId, readOnly = false }: { projectId:
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="developer">Developer</SelectItem>
-                    <SelectItem value="qa">QA Engineer</SelectItem>
+                    <SelectItem value="qa analyst">QA Analyst</SelectItem>
+                    <SelectItem value="project manager">Project Manager</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

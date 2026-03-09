@@ -146,6 +146,7 @@ export interface SignupResponse {
   userId: string | null;
   teamId: string | null;
   message?: string | null;
+  role?: string | null;
 }
 
 export interface LoginRequest {

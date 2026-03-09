@@ -222,13 +222,21 @@ export default function App() {
     navigateToPage(newPage);
   };
 
-  const handleSignupComplete = (id: string | null, email: string | null = null, displayName: string | null = null) => {
+  const handleSignupComplete = (id: string | null, email: string | null = null, displayName: string | null = null, specificRole: string = "developer") => {
     setIsAuthenticated(true);
-    setUserRole("po"); // Signup creates a PO account
+    
+    // Normalize role string and map to UI permissions (po/team)
+    const normalizedRole = specificRole.toLowerCase().trim();
+    const uiRole = (normalizedRole === "project manager" || normalizedRole === "po") ? "po" : "team";
+    
+    console.log(`[SignupComplete] User: ${email}, Specific Role: ${normalizedRole}, UI Layout: ${uiRole}`);
+    
+    setUserRole(uiRole);
     setUserId(id);
     setUserEmail(email);
     setUserDisplayName(displayName);
-    saveSession(true, "po", id, email, displayName);
+    saveSession(true, uiRole, id, email, displayName);
+
     const newPage: Page = "projectselection";
     setCurrentPage(newPage);
     navigateToPage(newPage);

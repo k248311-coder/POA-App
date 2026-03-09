@@ -28,7 +28,7 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.Property(u => u.Role)
             .HasColumnName("role")
-            .HasDefaultValue("team_member");
+            .HasDefaultValue("developer");
 
         builder.Property(u => u.CreatedAt)
             .HasColumnName("created_at")

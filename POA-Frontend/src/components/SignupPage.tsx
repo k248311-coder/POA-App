@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/
 import { signup } from "../lib/api";
 
 interface SignupPageProps {
-  onSignupComplete: (userId: string | null, email: string | null, displayName: string | null) => void;
+  onSignupComplete: (userId: string | null, email: string | null, displayName: string | null, role: string) => void;
   onNavigateToLogin: () => void;
 }
 
@@ -14,7 +14,7 @@ export function SignupPage({ onSignupComplete, onNavigateToLogin }: SignupPagePr
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("po"); // Default to Product Owner
+  const [role, setRole] = useState("project manager"); // Default to Project Manager
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -41,7 +41,8 @@ export function SignupPage({ onSignupComplete, onNavigateToLogin }: SignupPagePr
         return;
       }
 
-      onSignupComplete(response.userId, email.trim(), name.trim());
+      const finalRole = (response as any).role || (response as any).Role || role;
+      onSignupComplete(response.userId, email.trim(), name.trim(), finalRole);
     } catch (error) {
       if (error instanceof Error) {
         setSubmitError(error.message);
@@ -107,9 +108,9 @@ export function SignupPage({ onSignupComplete, onNavigateToLogin }: SignupPagePr
                 onChange={(e) => setRole(e.target.value)}
                 required
               >
-                <option value="po">Product Owner</option>
-                <option value="team_member">Team Member</option>
-                <option value="qa">QA / Tester</option>
+                <option value="project manager">Project Manager</option>
+                <option value="developer">Developer</option>
+                <option value="qa analyst">QA Analyst</option>
               </select>
             </div>
           </CardContent>

@@ -27,7 +27,8 @@ public sealed class ProjectReadService(IApplicationDbContext context) : IProject
             
             if (user != null)
             {
-                if (user.Role == "po")
+                if (user.Role.Equals("po", StringComparison.OrdinalIgnoreCase) || 
+                    user.Role.Equals("project manager", StringComparison.OrdinalIgnoreCase))
                 {
                     query = query.Where(p => p.OwnerUserId == userId.Value);
                 }

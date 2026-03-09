@@ -136,7 +136,7 @@ export function ProjectSelectionPage({
                         {userEmail || "No email"}
                       </p>
                       <Badge variant="outline" className="mt-2 text-xs">
-                        {userRole === "po" ? "Product Owner" : "Team Member"}
+                        {userRole === "po" ? "Project Manager" : "Team Member"}
                       </Badge>
                     </div>
                     <div className="border-t border-gray-200"></div>
