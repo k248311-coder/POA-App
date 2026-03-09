@@ -8,117 +8,109 @@ using POA.Application.Auth.Interfaces;
 using POA.Application.Common.Interfaces;
 using POA.Domain.Entities;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.Logging;
 
 namespace POA.Application.Auth.Services;
 
 public sealed class AuthService(
     IApplicationDbContext context,
-    ISupabaseAuthService supabaseAuthService) : IAuthService
+    ISupabaseAuthService supabaseAuthService,
+    ILogger<AuthService> logger) : IAuthService
 {
     public async Task<SignupResultDto> SignupAsync(SignupRequestDto request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var name = request.Name?.Trim();
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            return SignupResultDto.Failure("Name is required.");
-        }
+        var name = request.Name?.Trim() ?? string.Empty;
+        var emailInput = request.Email?.Trim().ToLowerInvariant() ?? string.Empty;
+        var roleInput = request.Role?.Trim().ToLowerInvariant() ?? string.Empty;
 
-        var email = request.Email?.Trim().ToLowerInvariant();
-        if (string.IsNullOrWhiteSpace(email))
-        {
-            return SignupResultDto.Failure("Email is required.");
-        }
+        logger.LogInformation("Signup sequence started for: {Email}. Originally requested role: {Role}", emailInput, roleInput);
 
-        var teamName = request.TeamName?.Trim();
-        if (string.IsNullOrWhiteSpace(teamName))
-        {
-            return SignupResultDto.Failure("Team name is required.");
-        }
+        if (string.IsNullOrWhiteSpace(name)) return SignupResultDto.Failure("Name is required.");
+        if (string.IsNullOrWhiteSpace(emailInput)) return SignupResultDto.Failure("Email is required.");
+        if (string.IsNullOrWhiteSpace(roleInput)) return SignupResultDto.Failure("Role is required.");
 
-        // Check if user already exists in our database
+        // Check for existing user
         var existingUser = await context.Users
             .AsNoTracking()
-            .FirstOrDefaultAsync(user => user.Email != null && user.Email.ToLower() == email, cancellationToken);
+            .FirstOrDefaultAsync(u => u.Email != null && u.Email.ToLower() == emailInput, cancellationToken);
 
         if (existingUser != null)
         {
+            logger.LogWarning("Signup aborted: User already exists with email {Email}", emailInput);
             return SignupResultDto.Failure("An account with this email already exists.");
+        }
+
+        // --- NEW BUSINESS LOGIC: Force role from invitations if they exist ---
+        string roleToUse = roleInput;
+        
+        // Find if this person was invited to any projects.
+        // We use ToLower() on both sides for case-insensitive matching.
+        var pendingInvitation = await context.ProjectMembers
+            .AsNoTracking()
+            .Where(pm => pm.UserId == null && pm.Email.ToLower() == emailInput)
+            .OrderByDescending(pm => pm.Role) // Simple prioritization: project manager sorts higher alphabetically than developer/qa analyst
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (pendingInvitation != null)
+        {
+            var invitedRole = pendingInvitation.Role.ToLower().Trim();
+            logger.LogInformation("Invitation found for {Email}! Overriding requested role '{Requested}' with invited role '{Invited}'.", 
+                emailInput, roleInput, invitedRole);
+            roleToUse = invitedRole;
+        }
+        else
+        {
+            logger.LogInformation("No pending invitations found for {Email}. Proceeding with user-selected role: {Role}", emailInput, roleInput);
         }
 
         // Step 1: Create user in Supabase Auth
         // This will create the user in auth.users, and a trigger will copy it to public.users
         var supabaseResult = await supabaseAuthService.SignUpAsync(
-            email, 
+            emailInput, 
             request.Password, 
             displayName: name, 
-            role: "po", 
+            role: roleToUse, 
             cancellationToken);
         
         if (!supabaseResult.Success)
         {
+            logger.LogError("Supabase signup failed for {Email}: {Error}", emailInput, supabaseResult.ErrorMessage);
             return SignupResultDto.Failure(supabaseResult.ErrorMessage ?? "Failed to create account.");
         }
 
-        if (string.IsNullOrEmpty(supabaseResult.SupabaseUserId))
+        if (string.IsNullOrEmpty(supabaseResult.SupabaseUserId) || !Guid.TryParse(supabaseResult.SupabaseUserId, out var supabaseUserId))
         {
-            // Include the error message from Supabase if available
-            var errorMsg = supabaseResult.ErrorMessage ?? "Failed to create account in authentication service.";
-            return SignupResultDto.Failure(errorMsg);
+            logger.LogError("Supabase signup returned invalid UserID for {Email}: {UserId}", emailInput, supabaseResult.SupabaseUserId);
+            return SignupResultDto.Failure("Failed to create account in authentication service.");
         }
 
-        // Parse the Supabase user ID
-        if (!Guid.TryParse(supabaseResult.SupabaseUserId, out var supabaseUserId))
-        {
-            return SignupResultDto.Failure($"Invalid user ID returned from authentication service: {supabaseResult.SupabaseUserId}");
-        }
+        logger.LogInformation("Supabase signup successful. User ID: {UserId}", supabaseUserId);
 
-        // Step 2: Supabase creates user in auth.users (done by SignUpAsync)
-        // Step 3: Database trigger copies user to public.users (handled by database trigger)
-        // Step 4: Create team - wait a moment for the trigger to complete, then verify user exists in public.users
+        // Wait a small bit for DB trigger if needed (though we'll link project members manually anyway)
+        await System.Threading.Tasks.Task.Delay(500, cancellationToken);
         
-        // Wait a brief moment for the database trigger to complete
-        await System.Threading.Tasks.Task.Delay(100, cancellationToken);
-        
-        // Verify the user exists in public.users (created by trigger)
-        var user = await context.Users
-            .FirstOrDefaultAsync(u => u.SupabaseUserId == supabaseUserId, cancellationToken);
-        
-        if (user == null)
-        {
-            // User should have been created by trigger, but it's not there yet
-            // Try waiting a bit longer and retry
-            await System.Threading.Tasks.Task.Delay(500, cancellationToken);
-            user = await context.Users
-                .FirstOrDefaultAsync(u => u.SupabaseUserId == supabaseUserId, cancellationToken);
+        // Step 2: Link project memberships
+        var projectMemberships = await context.ProjectMembers
+            .Where(pm => pm.UserId == null && pm.Email.ToLower() == emailInput)
+            .ToListAsync(cancellationToken);
             
-            if (user == null)
+        if (projectMemberships.Any())
+        {
+            logger.LogInformation("Linking {Count} project memberships for {Email} to user ID {UserId}", projectMemberships.Count, emailInput, supabaseUserId);
+            foreach (var pm in projectMemberships)
             {
-                return SignupResultDto.Failure("User was created in auth.users but not found in public.users. Please check your database trigger configuration.");
+                pm.UserId = supabaseUserId;
+                pm.Status = "Active";
+                pm.UpdatedAt = DateTimeOffset.UtcNow;
             }
-        }
-
-        // Create team with reference to the user
-        var team = new Team
-        {
-            Id = Guid.NewGuid(),
-            Name = teamName,
-            OwnerId = user.SupabaseUserId
-        };
-
-        context.Teams.Add(team);
-
-        try
-        {
+            
             await context.SaveChangesAsync(cancellationToken);
         }
-        catch (DbUpdateException exception)
-        {
-            return SignupResultDto.Failure($"Failed to create team: {exception.GetBaseException().Message}");
-        }
 
-        return SignupResultDto.CreateSuccess(user.SupabaseUserId, team.Id);
+        // Return the role that was ACTUALLY assigned (potentially forced)
+        return SignupResultDto.CreateSuccess(supabaseUserId, Guid.Empty, roleToUse);
     }
 
     public async Task<LoginResultDto> LoginAsync(LoginRequestDto request, CancellationToken cancellationToken = default)
@@ -126,57 +118,36 @@ public sealed class AuthService(
         ArgumentNullException.ThrowIfNull(request);
 
         var email = request.Email?.Trim().ToLowerInvariant();
-        if (string.IsNullOrWhiteSpace(email))
-        {
-            return LoginResultDto.Failure("Email is required.");
-        }
+        if (string.IsNullOrWhiteSpace(email)) return LoginResultDto.Failure("Email is required.");
 
-        if (string.IsNullOrWhiteSpace(request.Password))
-        {
-            return LoginResultDto.Failure("Password is required.");
-        }
-
-        // Authenticate with Supabase Auth
         var supabaseResult = await supabaseAuthService.SignInAsync(email, request.Password, cancellationToken);
-        
         if (!supabaseResult.Success)
         {
             return LoginResultDto.Failure(supabaseResult.ErrorMessage ?? "Invalid email or password.");
         }
 
-        if (string.IsNullOrEmpty(supabaseResult.SupabaseUserId))
-        {
-            return LoginResultDto.Failure("Failed to authenticate user.");
-        }
-
-        // Look up user in our database by Supabase user ID
-        // The user should exist in public.users via the database trigger
         var supabaseUserId = Guid.Parse(supabaseResult.SupabaseUserId);
-        var user = await context.Users
-            .FirstOrDefaultAsync(u => u.SupabaseUserId == supabaseUserId, cancellationToken);
+        var user = await context.Users.FirstOrDefaultAsync(u => u.SupabaseUserId == supabaseUserId, cancellationToken);
 
-        // If user doesn't exist in public.users, wait a moment for the trigger (in case of timing issue)
         if (user is null)
         {
             await System.Threading.Tasks.Task.Delay(500, cancellationToken);
-            user = await context.Users
-                .FirstOrDefaultAsync(u => u.SupabaseUserId == supabaseUserId, cancellationToken);
+            user = await context.Users.FirstOrDefaultAsync(u => u.SupabaseUserId == supabaseUserId, cancellationToken);
         }
 
-        // If still not found, the trigger may have failed or user was created before trigger was set up
         if (user is null)
         {
             return LoginResultDto.Failure("User account found in authentication service but not in database. Please contact support.");
         }
 
-        var role = user.Role switch
+        // Map database role to UI permission set
+        var dbRole = user.Role?.Trim().ToLower() ?? "developer";
+        var uiRole = dbRole switch
         {
-            "po" => "po",
-            "team_member" or "qa" => "team",
+            "project manager" or "po" => "po",
             _ => "team"
         };
 
-        return LoginResultDto.CreateSuccess(user.SupabaseUserId, user.Email ?? email, user.DisplayName, role);
+        return LoginResultDto.CreateSuccess(user.SupabaseUserId, user.Email ?? email, user.DisplayName, uiRole);
     }
 }
-

@@ -45,6 +45,8 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
 
     public DbSet<SprintRetrospective> SprintRetrospectives => Set<SprintRetrospective>();
 
+    public DbSet<ProjectMember> ProjectMembers => Set<ProjectMember>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

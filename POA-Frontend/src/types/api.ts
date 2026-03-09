@@ -138,9 +138,7 @@ export interface SignupRequest {
   name: string;
   email: string;
   password: string;
-  teamName: string;
-  teamDescription?: string | null;
-  inviteEmails: string[];
+  role: string;
 }
 
 export interface SignupResponse {
@@ -148,6 +146,7 @@ export interface SignupResponse {
   userId: string | null;
   teamId: string | null;
   message?: string | null;
+  role?: string | null;
 }
 
 export interface LoginRequest {
@@ -181,5 +180,28 @@ export interface CloseSprintRequest {
   whatDidntGoWell: string;
   ideasGoingForward: string;
   actionItems: string;
+}
+
+export interface ProjectMember {
+  id: string;
+  projectId: string;
+  userId: string | null;
+  email: string;
+  displayName: string | null;
+  role: string; // "developer", "qa"
+  hourlyCost: number;
+  status: string; // "Active", "Pending"
+  createdAt: string;
+}
+
+export interface AddProjectMemberRequest {
+  email: string;
+  role: string;
+  hourlyCost: number;
+}
+
+export interface UpdateProjectMemberRequest {
+  role: string;
+  hourlyCost: number;
 }
 

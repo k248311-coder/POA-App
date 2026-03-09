@@ -85,8 +85,8 @@ export function JoinTeamPage({ onJoinComplete }: JoinTeamPageProps) {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="developer">Developer</SelectItem>
-                  <SelectItem value="qa">QA Engineer</SelectItem>
-                  <SelectItem value="manager">Project Manager</SelectItem>
+                  <SelectItem value="qa analyst">QA Analyst</SelectItem>
+                  <SelectItem value="project manager">Project Manager</SelectItem>
                 </SelectContent>
               </Select>
             </div>

@@ -91,7 +91,7 @@ export function EstimatesPage({ projectId: _projectId }: { projectId: string }) 
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="numQAs">Number of QA Engineers</Label>
+              <Label htmlFor="numQAs">Number of QA Analysts</Label>
               <Input
                 id="numQAs"
                 type="number"
