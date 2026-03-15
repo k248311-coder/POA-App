@@ -44,6 +44,8 @@ export interface ProjectBacklogStory {
   estimatedTestHours: number | null;
   status: string;
   totalCost: number;
+  assigneeId?: string | null;
+  assigneeName?: string | null;
   tasks: ProjectBacklogTask[];
   testCases: ProjectBacklogTestCase[];
 }

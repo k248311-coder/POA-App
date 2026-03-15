@@ -4,7 +4,8 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { ArrowLeft, FileText, CheckSquare, Plus, Trash2, Beaker } from "lucide-react";
-import type { ProjectBacklogStory, ProjectBacklogTask, ProjectBacklogTestCase } from "../types/api";
+import { getProjectMembers } from "../lib/api";
+import type { ProjectBacklogStory, ProjectBacklogTask, ProjectBacklogTestCase, ProjectMember } from "../types/api";
 
 const WORK_STATUS_OPTIONS = [
   "To Do",
@@ -32,6 +33,7 @@ function formatCurrency(value?: number | null) {
 }
 
 export function StoryDetailPage({
+  projectId,
   story: initialStory,
   epicTitle,
   featureTitle,
@@ -42,10 +44,15 @@ export function StoryDetailPage({
   const [story, setStory] = useState<ProjectBacklogStory>(initialStory);
   const [hasChanges, setHasChanges] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [members, setMembers] = useState<ProjectMember[]>([]);
 
   useEffect(() => {
     setStory(initialStory);
   }, [initialStory.id]);
+
+  useEffect(() => {
+    getProjectMembers(projectId).then(setMembers).catch(console.error);
+  }, [projectId]);
 
   const update = (patch: Partial<ProjectBacklogStory>) => {
     setStory((prev: ProjectBacklogStory) => ({ ...prev, ...patch }));
@@ -56,6 +63,9 @@ export function StoryDetailPage({
   const setDescription = (description: string | null) => update({ description: description || null });
   const setStoryPoints = (storyPoints: number | null) => update({ storyPoints });
   const setStatus = (status: string) => update({ status });
+  const setAssigneeId = (assigneeId: string) => {
+    update({ assigneeId: assigneeId === "unassigned" ? null : assigneeId });
+  };
 
   const setAcceptanceCriteria = (acceptanceCriteria: string[]) => {
     update({ acceptanceCriteria });
@@ -226,6 +236,26 @@ export function StoryDetailPage({
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">Assignee</label>
+                <Select
+                  value={story.assigneeId ?? "unassigned"}
+                  onValueChange={setAssigneeId}
+                  disabled={readOnly}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Unassigned" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unassigned">Unassigned</SelectItem>
+                    {members.map(member => (
+                      <SelectItem key={member.userId ?? member.id} value={member.userId ?? "invalid"}>
+                        {member.displayName || member.email}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>

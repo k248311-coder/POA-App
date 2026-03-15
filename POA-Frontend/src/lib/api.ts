@@ -134,6 +134,10 @@ export function getProjectBacklog(projectId: string, signal?: AbortSignal) {
   return fetchJson<ProjectBacklog>(`/api/projects/${projectId}/backlog`, { signal });
 }
 
+export function getMyStories(projectId: string, userId: string, signal?: AbortSignal) {
+  return fetchJson<any[]>(`/api/projects/${projectId}/my-stories?userId=${userId}`, { signal });
+}
+
 export function getProjectTasks(projectId: string, signal?: AbortSignal) {
   return fetchJson<ProjectTask[]>(`/api/projects/${projectId}/tasks`, { signal });
 }

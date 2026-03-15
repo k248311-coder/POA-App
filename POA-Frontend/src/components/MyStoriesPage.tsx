@@ -1,92 +1,93 @@
-import React, { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { Input } from "./ui/input";
-import { Button } from "./ui/button";
 import { FileText, Clock } from "lucide-react";
+import { getProjectBacklog, updateStory } from "../lib/api";
+import { toast } from "sonner";
+import type { ProjectBacklogStory } from "../types/api";
+import { StoryDetailPage } from "./StoryDetailPage";
 
-interface Story {
-  id: string;
-  title: string;
-  epic: string;
-  feature: string;
-  status: string;
-  estimatedHours: number;
+interface MyStory extends ProjectBacklogStory {
+  epicTitle: string | null;
+  featureTitle: string | null;
   loggedHours: number;
 }
 
-export function MyStoriesPage({ projectId: _projectId }: { projectId: string }) {
-  const [stories, setStories] = useState<Story[]>([
-    {
-      id: "DEV-123",
-      title: "Implement user login API",
-      epic: "User Authentication",
-      feature: "Auth System",
-      status: "In Progress",
-      estimatedHours: 16,
-      loggedHours: 8,
-    },
-    {
-      id: "DEV-124",
-      title: "Create login UI component",
-      epic: "User Authentication",
-      feature: "Auth System",
-      status: "In Progress",
-      estimatedHours: 12,
-      loggedHours: 5,
-    },
-    {
-      id: "QA-456",
-      title: "Test shopping cart functionality",
-      epic: "Cart Management",
-      feature: "Shopping Cart",
-      status: "To Do",
-      estimatedHours: 10,
-      loggedHours: 0,
-    },
-    {
-      id: "DEV-120",
-      title: "Setup database migrations",
-      epic: "Infrastructure",
-      feature: "Database",
-      status: "Done",
-      estimatedHours: 8,
-      loggedHours: 8,
-    },
-    {
-      id: "DEV-119",
-      title: "Implement password reset",
-      epic: "User Authentication",
-      feature: "Auth System",
-      status: "In Validation",
-      estimatedHours: 14,
-      loggedHours: 14,
-    },
-  ]);
+export function MyStoriesPage({ projectId }: { projectId: string }) {
+  const [stories, setStories] = useState<MyStory[]>([]);
+  const [selectedStory, setSelectedStory] = useState<MyStory | null>(null);
 
-  const [hourInputs, setHourInputs] = useState<{ [key: string]: string }>({});
-
-  const updateStatus = (id: string, newStatus: string) => {
-    setStories(stories.map(story =>
-      story.id === id ? { ...story, status: newStatus } : story
-    ));
-  };
-
-  const logHours = (id: string) => {
-    const hoursToAdd = parseFloat(hourInputs[id] || "0");
-    if (hoursToAdd > 0) {
-      setStories(stories.map(story =>
-        story.id === id
-          ? { ...story, loggedHours: story.loggedHours + hoursToAdd }
-          : story
-      ));
-      setHourInputs({ ...hourInputs, [id]: "" });
+  const loadStories = () => {
+    const userId = localStorage.getItem("poa_user_id");
+    if (!userId) {
+      toast.error("User ID not found");
+      return;
     }
+
+    getProjectBacklog(projectId)
+      .then((data) => {
+        const myStories: MyStory[] = [];
+        data.epics.forEach((epic) => {
+          epic.features.forEach((feature) => {
+            feature.stories.forEach((story) => {
+              if (story.assigneeId === userId) {
+                const logged = story.tasks.reduce((sum, t) => sum + (t.devHours || 0) + (t.testHours || 0), 0);
+                myStories.push({
+                  ...story,
+                  epicTitle: epic.title,
+                  featureTitle: feature.title,
+                  loggedHours: logged
+                });
+              }
+            });
+          });
+        });
+        setStories(myStories);
+      })
+      .catch((err) => {
+        console.error("Failed to load stories", err);
+        toast.error("Failed to load attached stories");
+      });
   };
 
-  const totalEstimated = stories.reduce((sum, s) => sum + s.estimatedHours, 0);
+  useEffect(() => {
+    loadStories();
+  }, [projectId]);
+
+  const totalEstimated = stories.reduce((sum, s) => sum + (s.estimatedDevHours || 0) + (s.estimatedTestHours || 0), 0);
   const totalLogged = stories.reduce((sum, s) => sum + s.loggedHours, 0);
+
+  if (selectedStory) {
+    return (
+      <StoryDetailPage
+        projectId={projectId}
+        story={selectedStory}
+        epicTitle={selectedStory.epicTitle ?? undefined}
+        featureTitle={selectedStory.featureTitle ?? undefined}
+        onBack={() => {
+          setSelectedStory(null);
+        }}
+        onStoryUpdated={async (updated) => {
+          try {
+            await updateStory(updated.id, updated);
+            toast.success("Story updated successfully!");
+            // Update local story to show changes immediately if user stays on page
+            setSelectedStory({
+              ...updated,
+              epicTitle: selectedStory.epicTitle,
+              featureTitle: selectedStory.featureTitle,
+              loggedHours: updated.tasks.reduce((sum, t) => sum + (t.devHours || 0) + (t.testHours || 0), 0)
+            });
+            // Reload backlog to update the table
+            loadStories();
+          } catch (e) {
+            toast.error(e instanceof Error ? e.message : "Failed to update story");
+            throw e;
+          }
+        }}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -157,63 +158,29 @@ export function MyStoriesPage({ projectId: _projectId }: { projectId: string }) 
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Est. Hours</TableHead>
                   <TableHead className="text-right">Logged Hours</TableHead>
-                  <TableHead>Log Time</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {stories.map((story) => (
-                  <TableRow key={story.id}>
-                    <TableCell className="font-medium">{story.id}</TableCell>
-                    <TableCell>{story.title}</TableCell>
-                    <TableCell className="text-sm text-gray-600">{story.epic}</TableCell>
-                    <TableCell className="text-sm text-gray-600">{story.feature}</TableCell>
-                    <TableCell>
-                      <Select
-                        value={story.status}
-                        onValueChange={(val: string) => updateStatus(story.id, val)}
-                      >
-                        <SelectTrigger className="w-[140px]">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="To Do">To Do</SelectItem>
-                          <SelectItem value="In Progress">In Progress</SelectItem>
-                          <SelectItem value="In Validation">In Validation</SelectItem>
-                          <SelectItem value="Done">Done</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell className="text-right">{story.estimatedHours}h</TableCell>
-                    <TableCell className="text-right">
-                      <span className={story.loggedHours > story.estimatedHours ? "text-red-600" : ""}>
-                        {story.loggedHours}h
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          type="number"
-                          min="0"
-                          step="0.5"
-                          placeholder="Hours"
-                          className="w-20 h-8"
-                          value={hourInputs[story.id] || ""}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setHourInputs({
-                            ...hourInputs,
-                            [story.id]: e.target.value
-                          })}
-                        />
-                        <Button
-                          size="sm"
-                          onClick={() => logHours(story.id)}
-                          className="bg-teal-600 hover:bg-teal-700"
-                        >
-                          Log
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {stories.map((story) => {
+                  const estHours = (story.estimatedDevHours || 0) + (story.estimatedTestHours || 0);
+                  return (
+                    <TableRow key={story.id} className="cursor-pointer hover:bg-gray-50" onClick={() => setSelectedStory(story)}>
+                      <TableCell className="font-medium">{story.id.substring(0, 8)}</TableCell>
+                      <TableCell>{story.title}</TableCell>
+                      <TableCell className="text-sm text-gray-600">{story.epicTitle || "—"}</TableCell>
+                      <TableCell className="text-sm text-gray-600">{story.featureTitle || "—"}</TableCell>
+                      <TableCell>
+                        <span className="px-2 py-1 bg-gray-100 rounded-lg text-sm">{story.status}</span>
+                      </TableCell>
+                      <TableCell className="text-right">{estHours}h</TableCell>
+                      <TableCell className="text-right">
+                        <span className={story.loggedHours > estHours ? "text-red-600" : ""}>
+                          {story.loggedHours}h
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>

@@ -11,6 +11,7 @@ public sealed record UpdateStoryRequestDto(
     decimal? EstimatedDevHours,
     decimal? EstimatedTestHours,
     string Status,
+    Guid? AssigneeId,
     IReadOnlyList<UpdateStoryTaskDto> Tasks,
     IReadOnlyList<UpdateStoryTestCaseDto> TestCases);
 

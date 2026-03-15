@@ -258,6 +258,7 @@ public sealed class ProjectWriteService : IProjectWriteService
         story.StoryPoints = request.StoryPoints;
         story.EstimatedDevHours = request.EstimatedDevHours;
         story.EstimatedTestHours = request.EstimatedTestHours;
+        story.AssigneeId = request.AssigneeId;
         story.UpdatedAt = DateTime.UtcNow;
 
         // Update Tasks

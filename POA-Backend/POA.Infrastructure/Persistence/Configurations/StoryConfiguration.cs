@@ -53,9 +53,16 @@ public sealed class StoryConfiguration : IEntityTypeConfiguration<Story>
         // Stories table doesn't have updated_at column, so ignore it
         builder.Ignore(s => s.UpdatedAt);
 
+        builder.Property(s => s.AssigneeId)
+            .HasColumnName("assignee_id");
+
         builder.HasOne(s => s.Feature)
             .WithMany(f => f.Stories)
             .HasForeignKey(s => s.FeatureId);
+
+        builder.HasOne(s => s.Assignee)
+            .WithMany()
+            .HasForeignKey(s => s.AssigneeId);
     }
 }
 

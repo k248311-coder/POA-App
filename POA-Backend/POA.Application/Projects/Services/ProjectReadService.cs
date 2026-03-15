@@ -143,6 +143,8 @@ public sealed class ProjectReadService(IApplicationDbContext context) : IProject
                                         story.StoryPoints,
                                         story.EstimatedDevHours,
                                         story.EstimatedTestHours,
+                                        story.AssigneeId,
+                                        AssigneeName = story.Assignee != null ? story.Assignee.DisplayName ?? story.Assignee.Email : null,
                                         Tasks = story.Tasks
                                             .OrderBy(task => task.Status)
                                             .ThenBy(task => task.Title)
@@ -221,6 +223,8 @@ public sealed class ProjectReadService(IApplicationDbContext context) : IProject
                                     story.EstimatedTestHours,
                                     storyStatus,
                                     totalCost,
+                                    story.AssigneeId,
+                                    story.AssigneeName,
                                     tasks,
                                     testCases);
                             })
@@ -497,7 +501,24 @@ public sealed class ProjectReadService(IApplicationDbContext context) : IProject
                 m.CreatedAt))
             .ToListAsync(cancellationToken);
 
+
         return members;
+    }
+
+    public async Task<IReadOnlyList<MyStoryDto>> GetMyStoriesAsync(Guid projectId, Guid userId, CancellationToken cancellationToken = default)
+    {
+        return await context.Stories
+            .AsNoTracking()
+            .Where(s => s.Feature != null && s.Feature.Epic != null && s.Feature.Epic.ProjectId == projectId && s.AssigneeId == userId)
+            .Select(s => new MyStoryDto(
+                s.Id,
+                s.Title,
+                s.Feature != null && s.Feature.Epic != null ? s.Feature.Epic.Title : null,
+                s.Feature != null ? s.Feature.Title : null,
+                "To Do", // We will resolve status properly if needed, or default
+                (s.EstimatedDevHours ?? 0) + (s.EstimatedTestHours ?? 0),
+                s.Tasks.Sum(t => (t.DevHours ?? 0) + (t.TestHours ?? 0))))
+            .ToListAsync(cancellationToken);
     }
 
     private static string ResolveStoryStatus(

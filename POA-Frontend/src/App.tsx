@@ -455,7 +455,7 @@ export default function App() {
           <MyStoriesPage projectId={selectedProject.id} />
         )}
         {currentPage === "backlog" && selectedProject && (
-          <ProjectBacklog projectId={selectedProject.id} readOnly />
+          <ProjectBacklog projectId={selectedProject.id} />
         )}
         {currentPage === "prioritization" && selectedProject && (
           <PrioritizationPage userRole="team" projectId={selectedProject.id} />

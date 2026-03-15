@@ -23,5 +23,7 @@ public interface IProjectReadService
     Task<SrsJobStatusDto?> GetLatestSrsJobByProjectIdAsync(Guid projectId, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<ProjectMemberDto>> GetProjectMembersAsync(Guid projectId, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<MyStoryDto>> GetMyStoriesAsync(Guid projectId, Guid userId, CancellationToken cancellationToken = default);
 }
 

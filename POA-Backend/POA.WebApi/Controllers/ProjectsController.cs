@@ -64,6 +64,17 @@ public sealed class ProjectsController : ControllerBase
         return Ok(estimates);
     }
 
+    [HttpGet("{projectId:guid}/my-stories")]
+    [ProducesResponseType(typeof(IReadOnlyList<MyStoryDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetMyStories([FromRoute] Guid projectId, [FromQuery] Guid userId, CancellationToken cancellationToken)
+    {
+        if (userId == Guid.Empty)
+            return BadRequest("UserId is required.");
+
+        var stories = await _projectReadService.GetMyStoriesAsync(projectId, userId, cancellationToken);
+        return Ok(stories);
+    }
+
     [HttpGet("{projectId:guid}/worklogs")]
     [ProducesResponseType(typeof(IReadOnlyList<ProjectWorklogDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetWorklogs([FromRoute] Guid projectId, CancellationToken cancellationToken)

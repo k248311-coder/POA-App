@@ -22,6 +22,10 @@ public sealed class Story : BaseAuditableEntity
     
     public int? Priority { get; set; }
 
+    public Guid? AssigneeId { get; set; }
+
+    public User? Assignee { get; set; }
+
     public Feature? Feature { get; set; }
 
     public ICollection<Task> Tasks { get; set; } = new List<Task>();
